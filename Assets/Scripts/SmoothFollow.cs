@@ -8,16 +8,16 @@ public class SmoothFollow : MonoBehaviour {
 	public float distance;
 	public float height;
 	public float angle;
-	public GameObject planet;
+	private GameObject planet;
 	public float rotationDamping;
 	public float positionDamping;
 
-	// Use this for initialization
-	void Start() { }
+	void Start() {
+		planet = GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().currentPlanet;
+	}
 
-	// Update is called once per frame
 	void LateUpdate() {
-		if (target) {
+		if (target != null) {
 			//Damp the position
 			Vector3 direction = target.transform.position - planet.transform.position;
 			Vector3 desiredPosition = planet.transform.position + direction * height - target.transform.forward * distance;
@@ -30,3 +30,4 @@ public class SmoothFollow : MonoBehaviour {
 		}
 	}
 }
+

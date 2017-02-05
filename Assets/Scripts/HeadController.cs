@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class HeadController : MonoBehaviour {
+public class HeadController : NetworkBehaviour {
 
 	public float rotationSpeed;
 	public float maxAngle;
@@ -27,16 +28,18 @@ public class HeadController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-		RaycastHit hit;
-		if (Physics.Raycast(ray, out hit)) {
-			RotateLeftRight (hit);
-			RotateUpDown (hit);
+		if (isLocalPlayer) {
+			Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
+			RaycastHit hit;
+			if (Physics.Raycast(ray, out hit)) {
+				RotateLeftRight (hit);
+				RotateUpDown (hit);
+			}
+			if (Input.GetButtonDown("Fire1")) {
+				FireCanon();
+			}
+			UpdateCanonCoolDown();
 		}
-		if (Input.GetButtonDown("Fire1")) {
-			FireCanon();
-		}
-		UpdateCanonCoolDown();
 	}
 
 	public void UpdateCanonCoolDown() {
@@ -59,7 +62,6 @@ public class HeadController : MonoBehaviour {
 		if (remainingCoolDown <= 0.0f) {
 			//Canonball
 			GameObject newCannonball = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
-			newCannonball.GetComponent<Gravity> ().planet = transform.GetComponentInParent<Gravity> ().planet;
 			newCannonball.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
 			//Sound
 			audioSource.Play();
