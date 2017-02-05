@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 
-public class SmoothFollow : MonoBehaviour {
+public class SmoothFollow : NetworkBehaviour {
 
 	// The target we are following
 	public Transform target;
@@ -13,10 +14,13 @@ public class SmoothFollow : MonoBehaviour {
 	public float positionDamping;
 
 	void Start() {
+	}
+
+	public void UpdatePlanet() {
 		planet = GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().currentPlanet;
 	}
 
-	void LateUpdate() {
+	public void UpdateCameraPosition() { //Should be called during late update
 		if (target != null) {
 			//Damp the position
 			Vector3 direction = target.transform.position - planet.transform.position;

@@ -9,21 +9,33 @@ public class HeadController : NetworkBehaviour {
 	public float maxAngle;
 	public float canonCoolDownDuration;
 	public float canonBallForce;
+	public float recoilForce;
 	public GameObject ShootingFXPrefab;
 	public GameObject canonBallPrefab;
+	private GameObject head;
 	private GameObject canonBase;
 	private GameObject canonTip;
 	private GameObject canon;
+	private Rigidbody selfRigidbody;
 	private AudioSource audioSource;
-	float remainingCoolDown = 0.0f;
+	private SmoothFollow cameraSmoothFollow;
+	private float remainingCoolDown = 0.0f;
+
 
 	// Use this for initialization
 	void Start () {
-		canonBase = transform.FindChild("CanonBase").gameObject;
+		head = transform.FindChild("Meshes").FindChild("Head").gameObject;
+		canonBase = head.transform.FindChild("CanonBase").gameObject;
 		canon = canonBase.transform.FindChild("Canon").gameObject;
 		canonTip = canon.transform.FindChild("CanonTip").gameObject;
-		audioSource = this.GetComponent<AudioSource>();
-		UpdateCanonColor();
+		selfRigidbody = this.GetComponent<Rigidbody>();
+		cameraSmoothFollow = Camera.main.GetComponent<SmoothFollow> ();
+		audioSource = canon.GetComponent<AudioSource>();
+		if (isLocalPlayer) {
+			cameraSmoothFollow.target = head.transform;
+			cameraSmoothFollow.UpdatePlanet ();
+			UpdateCanonColor();
+		}
 	}
 	
 	// Update is called once per frame
@@ -39,6 +51,12 @@ public class HeadController : NetworkBehaviour {
 				FireCanon();
 			}
 			UpdateCanonCoolDown();
+		}
+	}
+
+	public void LateUpdate() {
+		if (isLocalPlayer) {
+			cameraSmoothFollow.UpdateCameraPosition();
 		}
 	}
 
@@ -60,6 +78,8 @@ public class HeadController : NetworkBehaviour {
 
 	public void FireCanon() {
 		if (remainingCoolDown <= 0.0f) {
+			//Recoil
+			selfRigidbody.AddForce(canon.transform.forward * -recoilForce);
 			//Canonball
 			GameObject newCannonball = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
 			newCannonball.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
@@ -74,26 +94,26 @@ public class HeadController : NetworkBehaviour {
 	}
 
 	public void RotateLeftRight(RaycastHit hit) {
-		Vector3 direction = (transform.InverseTransformPoint (hit.point) - transform.localPosition);
+		Vector3 direction = (head.transform.InverseTransformPoint (hit.point) - head.transform.localPosition);
 		direction.y = 0.0f;
 		direction.z = 0.0f;
 		if (direction.magnitude > 0.1f) {
 			Quaternion lookRotation = Quaternion.LookRotation (direction);
-			transform.localRotation = Quaternion.RotateTowards (transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
+			head.transform.localRotation = Quaternion.RotateTowards (head.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 		}
 	}
 
 	public void RotateUpDown(RaycastHit hit) {
 		Vector3 direction = (canonBase.transform.InverseTransformPoint (hit.point) - canonBase.transform.localPosition);
 		if (direction.y > 0.1f) {	//Raise the canon
-			if (canonBase.transform.localEulerAngles.x < 180.0f || Vector3.Angle(transform.forward, canonBase.transform.forward) < maxAngle) {
+			if (canonBase.transform.localEulerAngles.x < 180.0f || Vector3.Angle(head.transform.forward, canonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
 				Quaternion lookRotation = Quaternion.LookRotation (direction);
 				canonBase.transform.localRotation = Quaternion.RotateTowards (canonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 			}
 		} else if (direction.y < -0.1f) {	//Lower the canon
-			if (canonBase.transform.localEulerAngles.x > 180.0f || Vector3.Angle(transform.forward, canonBase.transform.forward) < maxAngle) {
+			if (canonBase.transform.localEulerAngles.x > 180.0f || Vector3.Angle(head.transform.forward, canonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
 				Quaternion lookRotation = Quaternion.LookRotation (direction);

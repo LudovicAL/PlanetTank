@@ -1,15 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class GameManager : MonoBehaviour {
+public class GameManager : NetworkBehaviour {
 
-	public GameObject currentPlanet { get; private set; }
 	private GameObject[] planetList;
+	public GameObject currentPlanet { get; private set; }
 
 	void Awake() {
-		planetList = GameObject.FindGameObjectsWithTag ("Planet");
-		currentPlanet = GetRandomPlanet ();
+			planetList = GameObject.FindGameObjectsWithTag ("Planet");
+			currentPlanet = GetRandomPlanet ();
 	}
 
 	// Use this for initialization
