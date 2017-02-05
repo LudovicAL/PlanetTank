@@ -8,7 +8,7 @@ public class HeadController : MonoBehaviour {
 	public float maxAngle;
 	public float canonCoolDownDuration;
 	public float canonBallForce;
-	public GameObject shootingFX;
+	public GameObject ShootingFXPrefab;
 	public GameObject canonBallPrefab;
 	private GameObject canonBase;
 	private GameObject canonTip;
@@ -64,7 +64,8 @@ public class HeadController : MonoBehaviour {
 			//Sound
 			audioSource.Play();
 			//Particle Effect
-
+			GameObject spawnedFX = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
+			spawnedFX.transform.localPosition = Vector3.zero;
 			//Cooldown
 			remainingCoolDown = canonCoolDownDuration;
 		}
@@ -74,20 +75,22 @@ public class HeadController : MonoBehaviour {
 		Vector3 direction = (transform.InverseTransformPoint (hit.point) - transform.localPosition);
 		direction.y = 0.0f;
 		direction.z = 0.0f;
-		Quaternion lookRotation = Quaternion.LookRotation (direction);
-		transform.localRotation = Quaternion.RotateTowards (transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
+		if (direction.magnitude > 0.1f) {
+			Quaternion lookRotation = Quaternion.LookRotation (direction);
+			transform.localRotation = Quaternion.RotateTowards (transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
+		}
 	}
 
 	public void RotateUpDown(RaycastHit hit) {
 		Vector3 direction = (canonBase.transform.InverseTransformPoint (hit.point) - canonBase.transform.localPosition);
-		if (direction.y > 0.0f) {	//Raise the canon
+		if (direction.y > 0.1f) {	//Raise the canon
 			if (canonBase.transform.localEulerAngles.x < 180.0f || Vector3.Angle(transform.forward, canonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
 				Quaternion lookRotation = Quaternion.LookRotation (direction);
 				canonBase.transform.localRotation = Quaternion.RotateTowards (canonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 			}
-		} else if (direction.y < 0.0f) {	//Lower the canon
+		} else if (direction.y < -0.1f) {	//Lower the canon
 			if (canonBase.transform.localEulerAngles.x > 180.0f || Vector3.Angle(transform.forward, canonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
