@@ -6,11 +6,11 @@ using UnityEngine.Networking;
 public class GameManager : NetworkBehaviour {
 
 	private GameObject[] planetList;
-	public GameObject currentPlanet { get; private set; }
+	[SyncVar]
+	private int currentPlanet;
 
 	void Awake() {
-			planetList = GameObject.FindGameObjectsWithTag ("Planet");
-			currentPlanet = GetRandomPlanet ();
+		planetList = GameObject.FindGameObjectsWithTag ("Planet");
 	}
 
 	// Use this for initialization
@@ -23,8 +23,11 @@ public class GameManager : NetworkBehaviour {
 		
 	}
 
-	private GameObject GetRandomPlanet () {
-		int i = Random.Range (0, planetList.Length - 1); 
-		return planetList [i];
+	public void RandomizePlanet () {
+		currentPlanet = Random.Range (0, planetList.Length - 1);
+	}
+
+	public GameObject GetPlanet() {
+		return planetList [currentPlanet];
 	}
 }

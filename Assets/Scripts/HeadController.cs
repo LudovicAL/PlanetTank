@@ -9,7 +9,9 @@ public class HeadController : NetworkBehaviour {
 	public float maxAngle;
 	public float canonCoolDownDuration;
 	public float canonBallForce;
+	public float canonBallDuration;
 	public float recoilForce;
+	public float smokeDuration;
 	public GameObject ShootingFXPrefab;
 	public GameObject canonBallPrefab;
 	private GameObject head;
@@ -80,18 +82,31 @@ public class HeadController : NetworkBehaviour {
 		if (remainingCoolDown <= 0.0f) {
 			//Recoil
 			selfRigidbody.AddForce(canon.transform.forward * -recoilForce);
-			//Canonball
-			GameObject newCannonball = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
-			newCannonball.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
 			//Sound
 			audioSource.Play();
-			//Particle Effect
-			GameObject spawnedFX = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
-			spawnedFX.transform.localPosition = Vector3.zero;
 			//Cooldown
 			remainingCoolDown = canonCoolDownDuration;
+			//Serverside stuff
+			CmdFireCanon (); //Called from the client, but invoked on the server
 		}
 	}
+
+	[Command]
+	public void CmdFireCanon() { //Called from the client, but invoked on the server			
+			//Canonball
+			GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
+			cannonBall.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
+			NetworkServer.Spawn(cannonBall);
+			Destroy(cannonBall, canonBallDuration);
+			//Particle Effect
+			GameObject smoke = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
+			smoke.transform.localPosition = Vector3.zero;
+			NetworkServer.Spawn(smoke);
+			Destroy (smoke, smokeDuration);
+	}
+
+
+
 
 	public void RotateLeftRight(RaycastHit hit) {
 		Vector3 direction = (head.transform.InverseTransformPoint (hit.point) - head.transform.localPosition);

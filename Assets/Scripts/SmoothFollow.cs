@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
-using UnityEngine.Networking;
 
-public class SmoothFollow : NetworkBehaviour {
+public class SmoothFollow : MonoBehaviour {
 
 	// The target we are following
 	public Transform target;
@@ -14,10 +13,11 @@ public class SmoothFollow : NetworkBehaviour {
 	public float positionDamping;
 
 	void Start() {
+		
 	}
 
 	public void UpdatePlanet() {
-		planet = GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().currentPlanet;
+		planet = GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().GetPlanet();
 	}
 
 	public void UpdateCameraPosition() { //Should be called during late update
