@@ -24,7 +24,9 @@ public class CustomNetworkManager : NetworkManager {
 	override public void OnServerReady(NetworkConnection conn) {
 		base.OnServerReady (conn);
 		Debug.Log ("Server ready.");
-		GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().RandomizePlanet ();
+		if (NetworkServer.connections.Count <= 1) {
+			GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().RandomizePlanet ();
+		}
 	}
 
 	//Called when a new player is added for a client

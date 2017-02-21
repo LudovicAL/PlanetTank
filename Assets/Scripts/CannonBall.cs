@@ -12,7 +12,6 @@ public class CannonBall : NetworkBehaviour {
 	// Use this for initialization
 	void Start () {
 		audioSource = this.GetComponent<AudioSource>();
-		currentPlanet = null; //This variable is initialized by the HeadController.
 	}
 	
 	// Update is called once per frame
@@ -39,6 +38,9 @@ public class CannonBall : NetworkBehaviour {
 
 	//Mutator
 	public GameObject CurrentPlanet {
+		get {
+			return currentPlanet;
+		}
 		set {
 			currentPlanet = value;
 		}

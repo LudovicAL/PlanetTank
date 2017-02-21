@@ -24,7 +24,8 @@ public class HeadController : NetworkBehaviour {
 	private GameObject scriptsBucket;
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
-
+	[SyncVar]
+	public int health;
 
 	// Use this for initialization
 	void Start () {
@@ -95,6 +96,17 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	public void TakeDamage() {
+		if (!isServer) {
+			health -= 1;
+			if (health <= 0) {
+				health = 0;
+				Debug.Log ("Player died.");
+				Destroy (this);
+			}
+		}
+	}
+	
 	[Command]
 	public void CmdFireCanon() { //Called from the client, but invoked on the server			
 		//Canonball

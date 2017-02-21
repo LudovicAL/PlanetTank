@@ -16,25 +16,27 @@ public class GameManager : NetworkBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		
+
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		
+
 	}
 
 	public void RandomizePlanet () {
-		currentPlanet = Random.Range (0, planetList.Length - 1);
-		GameObject[] spawns = GameObject.FindGameObjectsWithTag ("Spawn");
-		MoveSpawn (spawns [0], new Vector3 (10.0f, 0.0f, 0.0f));
-		MoveSpawn (spawns [1], new Vector3 (-10.0f, 0.0f, 0.0f));
-		MoveSpawn (spawns [2], new Vector3 (0.0f, 10.0f, 0.0f));
-		MoveSpawn (spawns [3], new Vector3 (0.0f, -10.0f, 0.0f));
-		MoveSpawn (spawns [4], new Vector3 (0.0f, 0.0f, 10.0f));
-		MoveSpawn (spawns [5], new Vector3 (0.0f, 0.0f, -10.0f));
-		MoveSpawn (spawns [6], new Vector3 (10.0f, 10.0f, 0.0f));
-		MoveSpawn (spawns [7], new Vector3 (-10.0f, -10.0f, 0.0f));
+		if (isServer) {
+			currentPlanet = Random.Range (0, planetList.Length - 1);
+			GameObject[] spawns = GameObject.FindGameObjectsWithTag ("Spawn");
+			MoveSpawn (spawns [0], new Vector3 (10.0f, 0.0f, 0.0f));
+			MoveSpawn (spawns [1], new Vector3 (-10.0f, 0.0f, 0.0f));
+			MoveSpawn (spawns [2], new Vector3 (0.0f, 10.0f, 0.0f));
+			MoveSpawn (spawns [3], new Vector3 (0.0f, -10.0f, 0.0f));
+			MoveSpawn (spawns [4], new Vector3 (0.0f, 0.0f, 10.0f));
+			MoveSpawn (spawns [5], new Vector3 (0.0f, 0.0f, -10.0f));
+			MoveSpawn (spawns [6], new Vector3 (10.0f, 10.0f, 0.0f));
+			MoveSpawn (spawns [7], new Vector3 (-10.0f, -10.0f, 0.0f));
+		}
 	}
 
 	private void MoveSpawn(GameObject spawn, Vector3 modifier) {
