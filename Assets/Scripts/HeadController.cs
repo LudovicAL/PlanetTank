@@ -21,6 +21,8 @@ public class HeadController : NetworkBehaviour {
 	private Rigidbody selfRigidbody;
 	private AudioSource audioSource;
 	private SmoothFollow cameraSmoothFollow;
+	private GameObject scriptsBucket;
+	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 
 
@@ -33,6 +35,8 @@ public class HeadController : NetworkBehaviour {
 		selfRigidbody = this.GetComponent<Rigidbody>();
 		cameraSmoothFollow = Camera.main.GetComponent<SmoothFollow> ();
 		audioSource = canon.GetComponent<AudioSource>();
+		scriptsBucket = GameObject.Find ("ScriptsBucket");
+		gameManager = scriptsBucket.GetComponent<GameManager>();
 		if (isLocalPlayer) {
 			cameraSmoothFollow.target = head.transform;
 			cameraSmoothFollow.UpdatePlanet ();
@@ -93,16 +97,17 @@ public class HeadController : NetworkBehaviour {
 
 	[Command]
 	public void CmdFireCanon() { //Called from the client, but invoked on the server			
-			//Canonball
-			GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
-			cannonBall.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
-			NetworkServer.Spawn(cannonBall);
-			Destroy(cannonBall, canonBallDuration);
-			//Particle Effect
-			GameObject smoke = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
-			smoke.transform.localPosition = Vector3.zero;
-			NetworkServer.Spawn(smoke);
-			Destroy (smoke, smokeDuration);
+		//Canonball
+		GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
+		cannonBall.GetComponent<CannonBall> ().CurrentPlanet = gameManager.GetPlanet ();
+		cannonBall.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
+		NetworkServer.Spawn(cannonBall);
+		Destroy(cannonBall, canonBallDuration);
+		//Particle Effect
+		GameObject smoke = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
+		smoke.transform.localPosition = Vector3.zero;
+		NetworkServer.Spawn(smoke);
+		Destroy (smoke, smokeDuration);
 	}
 
 
