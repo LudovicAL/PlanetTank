@@ -59,14 +59,10 @@ namespace UnityStandardAssets.Vehicles.Car {
             float f = Mathf.Abs(CurrentSpeed/MaxSpeed);
             float upgearlimit = (1/(float) NoOfGears)*(m_GearNum + 1);
             float downgearlimit = (1/(float) NoOfGears)*m_GearNum;
-
-            if (m_GearNum > 0 && f < downgearlimit)
-            {
+            if (m_GearNum > 0 && f < downgearlimit) {
                 m_GearNum--;
             }
-
-            if (f > upgearlimit && (m_GearNum < (NoOfGears - 1)))
-            {
+            if (f > upgearlimit && (m_GearNum < (NoOfGears - 1))) {
                 m_GearNum++;
             }
         }
@@ -146,7 +142,6 @@ namespace UnityStandardAssets.Vehicles.Car {
             TractionControl();
         }
 
-
         private void CapSpeed() {
             float speed = m_Rigidbody.velocity.magnitude * 3.6f;
 			if (speed > m_Topspeed) {
@@ -154,9 +149,7 @@ namespace UnityStandardAssets.Vehicles.Car {
 			}
         }
 
-
         private void ApplyDrive(float accel, float footbrake) {
-
             float thrustTorque;
 			thrustTorque = accel * (m_CurrentTorque / (float)nbWheels);
 			for (int i = 0; i < nbWheels; i++) {
@@ -165,7 +158,7 @@ namespace UnityStandardAssets.Vehicles.Car {
 
 			for (int i = 0; i < nbWheels; i++) {
                 if (CurrentSpeed > 5 && Vector3.Angle(transform.forward, m_Rigidbody.velocity) < 50f) {
-                    m_WheelColliders[i].brakeTorque = m_BrakeTorque*footbrake;
+                    m_WheelColliders[i].brakeTorque = m_BrakeTorque * footbrake;
                 }
                 else if (footbrake > 0) {
                     m_WheelColliders[i].brakeTorque = 0f;
@@ -173,7 +166,6 @@ namespace UnityStandardAssets.Vehicles.Car {
                 }
             }
         }
-
 
         private void SteerHelper() {
 			for (int i = 0; i < nbWheels; i++) {
@@ -198,7 +190,6 @@ namespace UnityStandardAssets.Vehicles.Car {
             m_WheelColliders[0].attachedRigidbody.AddForce(-transform.up*m_Downforce*
                                                          m_WheelColliders[0].attachedRigidbody.velocity.magnitude);
         }
-
 
         // checks if the wheels are spinning and if so does three things
         // 1) emits particles

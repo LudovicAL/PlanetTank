@@ -24,6 +24,8 @@ public class HeadController : NetworkBehaviour {
 	private GameObject scriptsBucket;
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
+	private ChatManager chatManager;
+	[HideInInspector] public int playerId;
 	[SyncVar]
 	public int health;
 
@@ -38,10 +40,16 @@ public class HeadController : NetworkBehaviour {
 		audioSource = canon.GetComponent<AudioSource>();
 		scriptsBucket = GameObject.Find ("ScriptsBucket");
 		gameManager = scriptsBucket.GetComponent<GameManager>();
+		chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
+		chatManager.headController = this.GetComponent<HeadController> ();
+		chatManager.UpdateChatStatus (true);
 		if (isLocalPlayer) {
 			cameraSmoothFollow.target = head.transform;
 			cameraSmoothFollow.UpdatePlanet ();
 			UpdateCanonColor();
+		}
+		if (isLocalPlayer) {
+			CmdSetPlayerId (); //Called from the client, but invoked on the server
 		}
 	}
 	
@@ -50,7 +58,7 @@ public class HeadController : NetworkBehaviour {
 		if (isLocalPlayer) {
 			Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 			RaycastHit hit;
-			if (Physics.Raycast(ray, out hit)) {
+			if (Physics.Raycast(ray, out hit, 1000.0f)) {
 				RotateLeftRight (hit);
 				RotateUpDown (hit);
 			}
@@ -59,6 +67,10 @@ public class HeadController : NetworkBehaviour {
 			}
 			UpdateCanonCoolDown();
 		}
+	}
+
+	void OnDestroy() {
+		chatManager.UpdateChatStatus (false);
 	}
 
 	public void LateUpdate() {
@@ -106,7 +118,12 @@ public class HeadController : NetworkBehaviour {
 			}
 		}
 	}
-	
+
+	[Command]
+	public void CmdSetPlayerId() { //Called from the client, but invoked on the server
+		playerId = gameManager.GeneratePlayerId ();
+	}
+
 	[Command]
 	public void CmdFireCanon() { //Called from the client, but invoked on the server			
 		//Canonball
@@ -121,9 +138,6 @@ public class HeadController : NetworkBehaviour {
 		NetworkServer.Spawn(smoke);
 		Destroy (smoke, smokeDuration);
 	}
-
-
-
 
 	public void RotateLeftRight(RaycastHit hit) {
 		Vector3 direction = (head.transform.InverseTransformPoint (hit.point) - head.transform.localPosition);
@@ -152,6 +166,20 @@ public class HeadController : NetworkBehaviour {
 				canonBase.transform.localRotation = Quaternion.RotateTowards (canonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 			}
 		}
+	}
 
+	public void SendChatMessage(string content) {
+		CmdBroadcastChatMessage (playerId, content);
+	}
+
+	[Command]
+	public void CmdBroadcastChatMessage(int id, string content) {
+		RpcReceiveChatMessage (int.Parse(id.ToString()), content);
+	}
+
+	[ClientRpc]
+	public void RpcReceiveChatMessage(int id, string content) {
+		bool localPlayer = (id == playerId);
+		chatManager.ReceiveChatMessage (localPlayer, id, content);
 	}
 }

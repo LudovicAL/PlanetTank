@@ -20,13 +20,15 @@ public class CannonBall : NetworkBehaviour {
 	}
 
 	private void OnCollisionEnter(Collision other) {
-		CmdSpawnExplosion (other.gameObject);
+		if (hasAuthority) {
+			CmdSpawnExplosion (other.gameObject);
+		}
 		audioSource.Play();
 		if (other.gameObject.tag == "Player") {
 			Debug.Log ("Player hit!");
 		}
 		Debug.Log (other.gameObject.tag.ToString());
-		Destroy(this);
+		Destroy (this);
 	}
 
 	[Command]

@@ -7,10 +7,12 @@ public class GameManager : NetworkBehaviour {
 
 	public GameObject spawnPrefab;
 	private GameObject[] planetList;
+	private int nextPlayerId;
 	[SyncVar]
 	private int currentPlanet;
 
 	void Awake() {
+		nextPlayerId = 0;
 		planetList = GameObject.FindGameObjectsWithTag ("Planet");
 	}
 
@@ -46,5 +48,10 @@ public class GameManager : NetworkBehaviour {
 
 	public GameObject GetPlanet() {
 		return planetList [currentPlanet];
+	}
+
+	public int GeneratePlayerId() {
+		nextPlayerId++;
+		return nextPlayerId;
 	}
 }
