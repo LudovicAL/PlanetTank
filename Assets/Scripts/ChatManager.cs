@@ -80,4 +80,18 @@ public class ChatManager : MonoBehaviour {
 	public void CancelChatMessage() {
 		inputField.text = "";
 	}
+
+	public void ReceiveChatMessage(bool ownMessage, string content) {
+		GameObject messageGo = GameObject.Instantiate(chatMessagePrefab, PanelMessages.transform);
+		Text t = messageGo.transform.FindChild ("Text Name").GetComponent<Text>();
+		t.text = "Player " + content.Substring (0, content.IndexOf (":") + 1);
+		t.color = (ownMessage) ? Color.red : Color.blue;
+		t = messageGo.transform.FindChild ("Text Content").GetComponent<Text>();
+		t.text = content.Substring (content.IndexOf (":") + 1);
+		messagesList.Add (messageGo);
+		if (messagesList.Count > 5) {
+			Destroy(messagesList [0]);
+			messagesList.RemoveAt (0);
+		}
+	}
 }

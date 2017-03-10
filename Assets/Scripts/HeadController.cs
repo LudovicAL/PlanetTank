@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Networking.NetworkSystem;
 
 public class HeadController : NetworkBehaviour {
 
@@ -25,12 +26,19 @@ public class HeadController : NetworkBehaviour {
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 	private ChatManager chatManager;
-	[HideInInspector] public int playerId;
-	[SyncVar]
-	public int health;
+	[SyncVar] public int health;
+	NetworkClient client;
+	const short CHAT_MSG = MsgType.Highest + 1;
 
 	// Use this for initialization
 	void Start () {
+		client = GameObject.FindObjectOfType<NetworkManager>().client;
+		if (client.isConnected) {
+			client.RegisterHandler(CHAT_MSG, ClientReceiveChatMessage);
+		}
+		if (isServer) {
+			NetworkServer.RegisterHandler(CHAT_MSG, ServerReceiveChatMessage);
+		}
 		head = transform.FindChild("Meshes").FindChild("Head").gameObject;
 		canonBase = head.transform.FindChild("CanonBase").gameObject;
 		canon = canonBase.transform.FindChild("Canon").gameObject;
@@ -48,9 +56,6 @@ public class HeadController : NetworkBehaviour {
 			cameraSmoothFollow.UpdatePlanet ();
 			UpdateCanonColor();
 		}
-		if (isLocalPlayer) {
-			CmdSetPlayerId (); //Called from the client, but invoked on the server
-		}
 	}
 	
 	// Update is called once per frame
@@ -65,12 +70,14 @@ public class HeadController : NetworkBehaviour {
 			if (Input.GetButtonDown("Fire1")) {
 				FireCanon();
 			}
-			UpdateCanonCoolDown();
+			UpdateCannonCoolDown();
 		}
 	}
 
 	void OnDestroy() {
-		chatManager.UpdateChatStatus (false);
+		if (isLocalPlayer) {
+			chatManager.UpdateChatStatus (false);
+		}
 	}
 
 	public void LateUpdate() {
@@ -79,7 +86,8 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	public void UpdateCanonCoolDown() {
+	//Updates the cannon cooldown timer
+	public void UpdateCannonCoolDown() {
 		if (remainingCoolDown > 0.0f) {
 			remainingCoolDown -= Time.fixedDeltaTime;
 			remainingCoolDown = Mathf.Max(remainingCoolDown, 0.0f);
@@ -87,6 +95,7 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	//Updates the cannon color: red if reloading, default if loaded
 	public void UpdateCanonColor() {
 		MeshRenderer meshRenderer = canon.GetComponent<MeshRenderer>();
 		if (meshRenderer != null) {
@@ -95,6 +104,7 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	//Fires a cannonball
 	public void FireCanon() {
 		if (remainingCoolDown <= 0.0f) {
 			//Recoil
@@ -108,6 +118,7 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	//Have the tank receive damage from a hit
 	public void TakeDamage() {
 		if (!isServer) {
 			health -= 1;
@@ -119,13 +130,9 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	//Fires a cannonball (called from the client, but invoked on the server)
 	[Command]
-	public void CmdSetPlayerId() { //Called from the client, but invoked on the server
-		playerId = gameManager.GeneratePlayerId ();
-	}
-
-	[Command]
-	public void CmdFireCanon() { //Called from the client, but invoked on the server			
+	public void CmdFireCanon() { 			
 		//Canonball
 		GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
 		cannonBall.GetComponent<CannonBall> ().CurrentPlanet = gameManager.GetPlanet ();
@@ -139,6 +146,7 @@ public class HeadController : NetworkBehaviour {
 		Destroy (smoke, smokeDuration);
 	}
 
+	//Rotates the turret left or right
 	public void RotateLeftRight(RaycastHit hit) {
 		Vector3 direction = (head.transform.InverseTransformPoint (hit.point) - head.transform.localPosition);
 		direction.y = 0.0f;
@@ -148,7 +156,8 @@ public class HeadController : NetworkBehaviour {
 			head.transform.localRotation = Quaternion.RotateTowards (head.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 		}
 	}
-
+		
+	//Rotates the cannon up or down
 	public void RotateUpDown(RaycastHit hit) {
 		Vector3 direction = (canonBase.transform.InverseTransformPoint (hit.point) - canonBase.transform.localPosition);
 		if (direction.y > 0.1f) {	//Raise the canon
@@ -168,18 +177,40 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	public void SendChatMessage(string content) {
-		CmdBroadcastChatMessage (playerId, content);
+	//Sends a chat message
+	public void SendChatMessage (string msg) {
+		StringMessage strMsg = new StringMessage(GetClientId() + ":" + msg);
+		if (isServer) {
+			NetworkServer.SendToAll(CHAT_MSG, strMsg); // Send to all clients
+		} else if (client.isConnected ) {
+			client.Send(CHAT_MSG, strMsg); // Sending message from client to server
+		}
 	}
 
-	[Command]
-	public void CmdBroadcastChatMessage(int id, string content) {
-		RpcReceiveChatMessage (int.Parse(id.ToString()), content);
+	//Server receives chat message
+	public void ServerReceiveChatMessage (NetworkMessage netMsg) {
+		if (isServer) {
+			string str = netMsg.ReadMessage<StringMessage>().value;
+			StringMessage strMsg = new StringMessage(str);
+			NetworkServer.SendToAll(CHAT_MSG, strMsg); // Send to all clients
+		}
 	}
 
-	[ClientRpc]
-	public void RpcReceiveChatMessage(int id, string content) {
-		bool localPlayer = (id == playerId);
-		chatManager.ReceiveChatMessage (localPlayer, id, content);
+	//Client receives chat message
+	public void ClientReceiveChatMessage (NetworkMessage netMsg) {
+		if(client.isConnected) {
+			string str = netMsg.ReadMessage<StringMessage>().value;
+			int tempo;
+			int.TryParse (str.Substring (0, str.IndexOf (":")), out tempo);
+			bool ownMessage = (GetClientId() == tempo);
+			chatManager.ReceiveChatMessage (ownMessage, str); // Add the message to the client's local chat window
+		}
+	}
+		
+	//Returns the client connection id
+	public int GetClientId() {
+		int result;
+		int.TryParse(this.GetComponent<NetworkIdentity> ().netId.Value.ToString (), out result);
+		return result;
 	}
 }
