@@ -2,14 +2,8 @@
 
 public class Cleaner : MonoBehaviour {
 
-	public float cleanAfterDuration;
+	[Tooltip("Duration in seconds after which the GameObject should be destroyed.")] public float cleanAfterDuration;
 
-	// Use this for initialization
-	void Start () {
-
-	}
-	
-	// Update is called once per frame
 	void Update () {
 		cleanAfterDuration -= Time.fixedDeltaTime;
 		if (cleanAfterDuration <= 0.0f)

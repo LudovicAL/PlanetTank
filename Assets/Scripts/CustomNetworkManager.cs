@@ -9,18 +9,24 @@ public class CustomNetworkManager : NetworkManager {
 	///Functions invoked on the Server/Host:
 	///////////////////////////////////////
 
-	//Called when a client connects 
+	/// <summary>
+	/// Called when a client connects 
+	/// </summary>
 	override public void OnServerConnect(NetworkConnection conn) {
 		Debug.Log ("Server Connected.");
 	}
 
-	//Called when a client disconnects
+	/// <summary>
+	/// Called when a client disconnects
+	/// </summary>
 	override public void OnServerDisconnect(NetworkConnection conn) {
 		base.OnServerDisconnect(conn);
 		Debug.Log ("Server disconnected.");
 	}
 
-	//Called when a client is ready
+	/// <summary>
+	/// Called when a client is ready
+	/// </summary>
 	override public void OnServerReady(NetworkConnection conn) {
 		base.OnServerReady (conn);
 		Debug.Log ("Server ready.");
@@ -29,19 +35,25 @@ public class CustomNetworkManager : NetworkManager {
 		}
 	}
 
-	//Called when a new player is added for a client
+	/// <summary>
+	/// Called when a new player is added for a client
+	/// </summary>
 	override public void OnServerAddPlayer(NetworkConnection conn, short playerControllerId) {
 		base.OnServerAddPlayer (conn, playerControllerId);
 		Debug.Log ("Server added player.");
 	}
 
-	//Called when a player is removed for a client
+	/// <summary>
+	/// Called when a player is removed for a client
+	/// </summary>
 	override public void OnServerRemovePlayer(NetworkConnection conn, PlayerController playerController) {
 		base.OnServerRemovePlayer (conn, playerController);
 		Debug.Log ("Server removed player.");
 	}
 
-	//Called when a network error occurs
+	/// <summary>
+	/// Called when a network error occurs
+	/// </summary>
 	override public void OnServerError(NetworkConnection conn, int errorCode) {
 		Debug.Log ("Server error.");
 	}
@@ -50,35 +62,47 @@ public class CustomNetworkManager : NetworkManager {
 	///Functions invoked on the client:
 	///////////////////////////////////////
 
-	//Called when connected to a server
+	/// <summary>
+	/// Called when connected to a server
+	/// </summary>
 	override public void OnClientConnect(NetworkConnection conn) {
 		base.OnClientConnect (conn);
 		Debug.Log ("Client connected.");
 	}
 
-	//Called when disconnected from a server
+	/// <summary>
+	/// Called when disconnected from a server
+	/// </summary>
 	override public void OnClientDisconnect(NetworkConnection conn) {
 		base.OnClientDisconnect (conn);
 		Debug.Log ("Client disconnected.");
 	}
 
-	//Called when a network error occurs
+	/// <summary>
+	/// Called when a network error occurs
+	/// </summary>
 	override public void OnClientError(NetworkConnection conn, int errorCode) {
 		Debug.Log ("Client error.");
 	}
 
-	//Called when told to be not-ready by a server
+	/// <summary>
+	/// Called when told to be not-ready by a server
+	/// </summary>
 	public override void OnClientNotReady(NetworkConnection conn) {
 		Debug.Log ("Client not ready.");
 	}
 
-	//Called when a match is created
+	/// <summary>
+	/// Called when a match is created
+	/// </summary>
 	public override void OnMatchCreate(bool success, string extendedInfo, UnityEngine.Networking.Match.MatchInfo matchInfo) {
 		base.OnMatchCreate (success, extendedInfo, matchInfo);
 		Debug.Log ("Match created.");
 	}
 
-	//Called when a list of matches is received
+	/// <summary>
+	/// Called when a list of matches is received
+	/// </summary>
 	public override void OnMatchList(bool success, string extendedInfo, List<UnityEngine.Networking.Match.MatchInfoSnapshot> matchList) {
 		base.OnMatchList (success, extendedInfo, matchList);
 		Debug.Log ("Match list received.");
@@ -88,7 +112,9 @@ public class CustomNetworkManager : NetworkManager {
 	///
 	///////////////////////////////////////
 
-	//Called when a match is joined
+	/// <summary>
+	/// Called when a match is joined
+	/// </summary>
 	public override void OnMatchJoined(bool success, string extendedInfo, UnityEngine.Networking.Match.MatchInfo matchInfo) {
 		base.OnMatchJoined (success, extendedInfo, matchInfo);
 		Debug.Log ("Match joined.");

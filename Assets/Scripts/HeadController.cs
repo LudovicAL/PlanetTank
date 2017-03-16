@@ -6,15 +6,15 @@ using UnityEngine.Networking.NetworkSystem;
 
 public class HeadController : NetworkBehaviour {
 
-	public float rotationSpeed;
-	public float maxAngle;
-	public float canonCoolDownDuration;
-	public float canonBallForce;
-	public float canonBallDuration;
-	public float recoilForce;
-	public float smokeDuration;
-	public GameObject ShootingFXPrefab;
-	public GameObject canonBallPrefab;
+	[Tooltip("The turret left and right rotation speed.")] public float rotationSpeed;
+	[Tooltip("The cannon maximum up or down rotation angle.")] public float maxAngle;
+	[Tooltip("The time in seconds between each cannon shot.")] public float canonCoolDownDuration;
+	[Tooltip("The force applied on a cannonball when it is shot.")] public float canonBallForce;
+	[Tooltip("The lifespan of cannonballs in seconds.")] public float canonBallDuration;
+	[Tooltip("The force of the recoil when the cannon is shot.")] public float recoilForce;
+	[Tooltip("The lifespan of the smoke when the cannon is shot, in seconds.")] public float smokeDuration;
+	[Tooltip("The smoke prefab instantiated when the cannon is shot.")] public GameObject ShootingFXPrefab;
+	[Tooltip("The cannonball prefab instantiated when the cannon is shot.")] public GameObject canonBallPrefab;
 	private GameObject head;
 	private GameObject canonBase;
 	private GameObject canonTip;
@@ -26,11 +26,11 @@ public class HeadController : NetworkBehaviour {
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 	private ChatManager chatManager;
+	private IdMaker idMaker;
 	[SyncVar] public int health;
 	NetworkClient client;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
-	// Use this for initialization
 	void Start () {
 		client = GameObject.FindObjectOfType<NetworkManager>().client;
 		if (client.isConnected) {
@@ -48,6 +48,7 @@ public class HeadController : NetworkBehaviour {
 		audioSource = canon.GetComponent<AudioSource>();
 		scriptsBucket = GameObject.Find ("ScriptsBucket");
 		gameManager = scriptsBucket.GetComponent<GameManager>();
+		idMaker = this.GetComponent<IdMaker>();
 		chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
 		chatManager.headController = this.GetComponent<HeadController> ();
 		chatManager.UpdateChatStatus (true);
@@ -57,8 +58,7 @@ public class HeadController : NetworkBehaviour {
 			UpdateCanonColor();
 		}
 	}
-	
-	// Update is called once per frame
+
 	void Update () {
 		if (isLocalPlayer) {
 			Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
@@ -74,19 +74,24 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	void OnDestroy() {
-		if (isLocalPlayer) {
-			chatManager.UpdateChatStatus (false);
-		}
-	}
-
 	public void LateUpdate() {
 		if (isLocalPlayer) {
 			cameraSmoothFollow.UpdateCameraPosition();
 		}
 	}
 
-	//Updates the cannon cooldown timer
+	/// <summary>
+	/// Called when the GameObject is destroyed.
+	/// </summary>
+	void OnDestroy() {
+		if (isLocalPlayer) {
+			chatManager.UpdateChatStatus (false);
+		}
+	}
+
+	/// <summary>
+	/// Updates the cooldown timer used to determine the color of the cannon as it becomes red when shot.
+	/// </summary>
 	public void UpdateCannonCoolDown() {
 		if (remainingCoolDown > 0.0f) {
 			remainingCoolDown -= Time.fixedDeltaTime;
@@ -95,7 +100,9 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Updates the cannon color: red if reloading, default if loaded
+	/// <summary>
+	/// Updates the cannon color: red if it just shot, default otherwise.
+	/// </summary>
 	public void UpdateCanonColor() {
 		MeshRenderer meshRenderer = canon.GetComponent<MeshRenderer>();
 		if (meshRenderer != null) {
@@ -104,7 +111,23 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Fires a cannonball
+	/// <summary>
+	/// Has the tank receive damage from a cannonball hit.
+	/// </summary>
+	public void TakeDamage() {
+		if (!isServer) {
+			health -= 1;
+			if (health <= 0) {
+				health = 0;
+				Debug.Log ("Player died.");
+				Destroy (this);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Fires a cannonball out of the cannon (client side).
+	/// </summary>
 	public void FireCanon() {
 		if (remainingCoolDown <= 0.0f) {
 			//Recoil
@@ -118,24 +141,14 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Have the tank receive damage from a hit
-	public void TakeDamage() {
-		if (!isServer) {
-			health -= 1;
-			if (health <= 0) {
-				health = 0;
-				Debug.Log ("Player died.");
-				Destroy (this);
-			}
-		}
-	}
-
-	//Fires a cannonball (called from the client, but invoked on the server)
+	/// <summary>
+	/// Fires a cannonball out of the cannon (server side).
+	/// </summary>
 	[Command]
 	public void CmdFireCanon() { 			
 		//Canonball
 		GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
-		cannonBall.GetComponent<CannonBall> ().CurrentPlanet = gameManager.GetPlanet ();
+		cannonBall.GetComponent<CannonBall> ().currentPlanet = gameManager.GetPlanet ();
 		cannonBall.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
 		NetworkServer.Spawn(cannonBall);
 		Destroy(cannonBall, canonBallDuration);
@@ -146,7 +159,9 @@ public class HeadController : NetworkBehaviour {
 		Destroy (smoke, smokeDuration);
 	}
 
-	//Rotates the turret left or right
+	/// <summary>
+	/// Rotates the tank's turret left of right.
+	/// </summary>
 	public void RotateLeftRight(RaycastHit hit) {
 		Vector3 direction = (head.transform.InverseTransformPoint (hit.point) - head.transform.localPosition);
 		direction.y = 0.0f;
@@ -157,7 +172,9 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 		
-	//Rotates the cannon up or down
+	/// <summary>
+	/// Rotates the tank's cannon up or down.
+	/// </summary>
 	public void RotateUpDown(RaycastHit hit) {
 		Vector3 direction = (canonBase.transform.InverseTransformPoint (hit.point) - canonBase.transform.localPosition);
 		if (direction.y > 0.1f) {	//Raise the canon
@@ -177,9 +194,11 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Sends a chat message
+	/// <summary>
+	/// Sends a chat message.
+	/// </summary>
 	public void SendChatMessage (string msg) {
-		StringMessage strMsg = new StringMessage(GetClientId() + ":" + msg);
+		StringMessage strMsg = new StringMessage(idMaker.playerUniqueId.ToString() + ": " + msg);
 		if (isServer) {
 			NetworkServer.SendToAll(CHAT_MSG, strMsg); // Send to all clients
 		} else if (client.isConnected ) {
@@ -187,7 +206,9 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Server receives chat message
+	/// <summary>
+	/// Receives a chat message (server side).
+	/// </summary>
 	public void ServerReceiveChatMessage (NetworkMessage netMsg) {
 		if (isServer) {
 			string str = netMsg.ReadMessage<StringMessage>().value;
@@ -196,21 +217,16 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	//Client receives chat message
+	/// <summary>
+	/// Receives a chat message (client side).
+	/// </summary>
 	public void ClientReceiveChatMessage (NetworkMessage netMsg) {
 		if(client.isConnected) {
 			string str = netMsg.ReadMessage<StringMessage>().value;
 			int tempo;
 			int.TryParse (str.Substring (0, str.IndexOf (":")), out tempo);
-			bool ownMessage = (GetClientId() == tempo);
-			chatManager.ReceiveChatMessage (ownMessage, str); // Add the message to the client's local chat window
+			bool ownMessage = (idMaker.playerUniqueId == tempo);
+			chatManager.ReceiveChatMessage (ownMessage, "Player " + str);
 		}
-	}
-		
-	//Returns the client connection id
-	public int GetClientId() {
-		int result;
-		int.TryParse(this.GetComponent<NetworkIdentity> ().netId.Value.ToString (), out result);
-		return result;
 	}
 }

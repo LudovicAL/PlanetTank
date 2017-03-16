@@ -5,25 +5,33 @@ using UnityEngine.Networking;
 
 public class IdMaker : NetworkBehaviour {
 
-	[SyncVar] public string playerUniqueId;
-	private NetworkInstanceId playerNetId;
+	[SyncVar] public int playerUniqueId;
 
 	override public void OnStartLocalPlayer() {
-		GetNetId();
+		ClientCommunicateId();
 	}
 
+	/// <summary>
+	/// Communicate the client id to the server (client side).
+	/// </summary>
 	[Client]
-	public void GetNetId() {
-		playerNetId = GetComponent<NetworkIdentity> ().netId;
-		CmdTellServerMyId (MakeUniqueId ());
+	public void ClientCommunicateId() {
+		CmdServerBroadcastMyId (MakeUniqueId ());
 	}
 
+	/// <summary>
+	/// Broadcast the id received from a client to all clients (server side).
+	/// </summary>
 	[Command]
-	public void CmdTellServerMyId(string id) {
+	public void CmdServerBroadcastMyId(int id) {
 		playerUniqueId = id;
 	}
 
-	public string MakeUniqueId() {
-		return "Player " + playerNetId.ToString();
+	/// <summary>
+	/// Constructs a playerUniqueId.
+	/// </summary>
+	public int MakeUniqueId() {
+		NetworkInstanceId playerNetId = GetComponent<NetworkIdentity> ().netId;
+		return int.Parse(playerNetId.ToString());
 	}
 }

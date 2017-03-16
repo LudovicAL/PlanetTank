@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 
 public class GameManager : NetworkBehaviour {
 
-	public GameObject spawnPrefab;
+	[Tooltip("The spawn prefab instantiated all around a planet to mark the different player starting positions.")] public GameObject spawnPrefab;
 	private GameObject[] planetList;
 	[SyncVar]
 	private int currentPlanet;
@@ -14,16 +14,9 @@ public class GameManager : NetworkBehaviour {
 		planetList = GameObject.FindGameObjectsWithTag ("Planet");
 	}
 
-	// Use this for initialization
-	void Start () {
-
-	}
-	
-	// Update is called once per frame
-	void Update () {
-
-	}
-
+	/// <summary>
+	/// Selects a random planet for the next match and move the spawn position all around it.
+	/// </summary>
 	public void RandomizePlanet () {
 		if (isServer) {
 			currentPlanet = Random.Range (0, planetList.Length - 1);
@@ -39,11 +32,17 @@ public class GameManager : NetworkBehaviour {
 		}
 	}
 
+	/// <summary>
+	/// Moves a spawn to a specified location.
+	/// </summary>
 	private void MoveSpawn(GameObject spawn, Vector3 modifier) {
 		spawn.transform.position = GetPlanet ().transform.position + modifier;
 		spawn.transform.rotation = Quaternion.LookRotation (spawn.transform.position - GetPlanet ().transform.position + new Vector3(0.0f, -90.0f, 0.0f));
 	}
 
+	/// <summary>
+	/// Return the planet selected for the current match.
+	/// </summary>
 	public GameObject GetPlanet() {
 		return planetList [currentPlanet];
 	}
