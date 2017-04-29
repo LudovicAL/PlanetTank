@@ -12,7 +12,6 @@ namespace Prototype.NetworkLobby {
             panelImage = GetComponent<Image>();
         }
 
-
         void Update() {
 			if (!isInGame) {
                 return;
@@ -20,7 +19,6 @@ namespace Prototype.NetworkLobby {
             if (Input.GetKeyDown(KeyCode.Escape)) {
                 ToggleVisibility(!isDisplayed);
             }
-
         }
 
         public void ToggleVisibility(bool visible) {

@@ -7,12 +7,30 @@ public class SmoothFollow : MonoBehaviour {
 	[Tooltip("Distance to the target.")] public float distance;
 	[Tooltip("Height relative to the target.")] public float height;
 	[Tooltip("Angle of the camera.")] public float angle;
+	private bool gmWasInitialized;
 	private GameObject planet;
 	[Tooltip("Damping applied on the camera rotation speed.")] public float rotationDamping;
 	[Tooltip("Damping applied on the camera movement speed.")] public float positionDamping;
 
+
 	void Start() {
-		
+		gmWasInitialized = false;
+		InitializeGameManager ();
+	}
+
+	public void InitializeGameManager() {
+		if (gmWasInitialized == false) {
+			GameObject scriptsBucket = GameObject.Find ("ScriptsBucket");
+			if (scriptsBucket == null) {
+				return;
+			}
+			planet = scriptsBucket.GetComponent<GameManager> ().GetPlanet();
+			gmWasInitialized = true;
+		}
+	}
+
+	public void LateUpdate() {
+		UpdateCameraPosition();
 	}
 
 	/// <summary>
@@ -25,8 +43,8 @@ public class SmoothFollow : MonoBehaviour {
 	/// <summary>
 	/// Updates the camera position relative to the player and the active planet. This function should be called during late update.
 	/// </summary>
-	public void UpdateCameraPosition() { //Should be called during late update
-		if (target != null) {
+	public void UpdateCameraPosition() {
+		if (target != null && planet != null) {
 			//Damp the position
 			Vector3 direction = target.transform.position - planet.transform.position;
 			Vector3 desiredPosition = planet.transform.position + direction * height - target.transform.forward * distance;

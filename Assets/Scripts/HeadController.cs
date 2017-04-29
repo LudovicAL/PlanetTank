@@ -6,28 +6,37 @@ using UnityEngine.Networking.NetworkSystem;
 
 public class HeadController : NetworkBehaviour {
 
+	[Header("Head rotation")]
 	[Tooltip("The turret left and right rotation speed.")] public float rotationSpeed;
 	[Tooltip("The cannon maximum up or down rotation angle.")] public float maxAngle;
-	[Tooltip("The time in seconds between each cannon shot.")] public float canonCoolDownDuration;
-	[Tooltip("The force applied on a cannonball when it is shot.")] public float canonBallForce;
-	[Tooltip("The lifespan of cannonballs in seconds.")] public float canonBallDuration;
+	[Header("Cannon")]
+	[Tooltip("The time in seconds between each cannon shot.")] public float cannonCoolDownDuration;
 	[Tooltip("The force of the recoil when the cannon is shot.")] public float recoilForce;
+	[Header("Cannonballs")]
+	[Tooltip("The cannonball prefab instantiated when the cannon is shot.")] public GameObject cannonBallPrefab;
+	[Tooltip("The force applied on a cannonball when it is shot.")] public float cannonBallForce;
+	[Tooltip("The lifespan of cannonballs in seconds.")] public float cannonBallDuration;
+	[Header("Particle Effects")]
 	[Tooltip("The lifespan of the smoke when the cannon is shot, in seconds.")] public float smokeDuration;
 	[Tooltip("The smoke prefab instantiated when the cannon is shot.")] public GameObject ShootingFXPrefab;
-	[Tooltip("The cannonball prefab instantiated when the cannon is shot.")] public GameObject canonBallPrefab;
+	[Header("Tank health")]
+	[SyncVar] public int health;
+	[Header("Player")]
+	[SyncVar] public string pName;
+	[SyncVar] public Color pColor;
 	private GameObject head;
-	private GameObject canonBase;
-	private GameObject canonTip;
-	private GameObject canon;
+	private GameObject cannonBase;
+	private GameObject cannonTip;
+	private GameObject cannon;
 	private Rigidbody selfRigidbody;
 	private AudioSource audioSource;
 	private SmoothFollow cameraSmoothFollow;
 	private GameObject scriptsBucket;
+	private bool gmWasInitialized;
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 	private ChatManager chatManager;
 	private IdMaker idMaker;
-	[SyncVar] public int health;
 	NetworkClient client;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
@@ -40,23 +49,40 @@ public class HeadController : NetworkBehaviour {
 			NetworkServer.RegisterHandler(CHAT_MSG, ServerReceiveChatMessage);
 		}
 		head = transform.FindChild("Meshes").FindChild("Head").gameObject;
-		canonBase = head.transform.FindChild("CanonBase").gameObject;
-		canon = canonBase.transform.FindChild("Canon").gameObject;
-		canonTip = canon.transform.FindChild("CanonTip").gameObject;
+		cannonBase = head.transform.FindChild("CannonBase").gameObject;
+		cannon = cannonBase.transform.FindChild("Cannon").gameObject;
+		cannonTip = cannon.transform.FindChild("CannonTip").gameObject;
 		selfRigidbody = this.GetComponent<Rigidbody>();
 		cameraSmoothFollow = Camera.main.GetComponent<SmoothFollow> ();
-		audioSource = canon.GetComponent<AudioSource>();
-		scriptsBucket = GameObject.Find ("ScriptsBucket");
-		gameManager = scriptsBucket.GetComponent<GameManager>();
+		audioSource = cannon.GetComponent<AudioSource>();
+		gmWasInitialized = false;
+		InitializeGameManager ();
 		idMaker = this.GetComponent<IdMaker>();
-		chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
-		chatManager.headController = this.GetComponent<HeadController> ();
-		chatManager.UpdateChatStatus (true);
+		//chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
+		//chatManager.headController = this.GetComponent<HeadController> ();
+		//chatManager.UpdateChatStatus (true);
 		if (isLocalPlayer) {
 			cameraSmoothFollow.target = head.transform;
-			cameraSmoothFollow.UpdatePlanet ();
-			UpdateCanonColor();
+			UpdatecannonColor();
 		}
+	}
+
+	public void InitializeGameManager() {
+		if (gmWasInitialized == false) {
+			scriptsBucket = GameObject.Find ("ScriptsBucket");
+			if (scriptsBucket == null) {
+				return;
+			}
+			gameManager = scriptsBucket.GetComponent<GameManager>();
+			gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
+			gmWasInitialized = true;
+		}
+	}
+
+	[ClientRpc]
+	public void RpcMoveToSpawn(Vector3 position, Quaternion rotation) {
+		gameObject.transform.position = position;
+		gameObject.transform.rotation = rotation;
 	}
 
 	void Update () {
@@ -68,15 +94,9 @@ public class HeadController : NetworkBehaviour {
 				RotateUpDown (hit);
 			}
 			if (Input.GetButtonDown("Fire1")) {
-				FireCanon();
+				Firecannon();
 			}
 			UpdateCannonCoolDown();
-		}
-	}
-
-	public void LateUpdate() {
-		if (isLocalPlayer) {
-			cameraSmoothFollow.UpdateCameraPosition();
 		}
 	}
 
@@ -96,15 +116,15 @@ public class HeadController : NetworkBehaviour {
 		if (remainingCoolDown > 0.0f) {
 			remainingCoolDown -= Time.fixedDeltaTime;
 			remainingCoolDown = Mathf.Max(remainingCoolDown, 0.0f);
-			UpdateCanonColor();
+			UpdatecannonColor();
 		}
 	}
 
 	/// <summary>
 	/// Updates the cannon color: red if it just shot, default otherwise.
 	/// </summary>
-	public void UpdateCanonColor() {
-		MeshRenderer meshRenderer = canon.GetComponent<MeshRenderer>();
+	public void UpdatecannonColor() {
+		MeshRenderer meshRenderer = cannon.GetComponent<MeshRenderer>();
 		if (meshRenderer != null) {
 			Color cannonColor = remainingCoolDown > 0.0f ? Color.red : Color.black;
 			meshRenderer.material.color = cannonColor;
@@ -128,16 +148,16 @@ public class HeadController : NetworkBehaviour {
 	/// <summary>
 	/// Fires a cannonball out of the cannon (client side).
 	/// </summary>
-	public void FireCanon() {
+	public void Firecannon() {
 		if (remainingCoolDown <= 0.0f) {
 			//Recoil
-			selfRigidbody.AddForce(canon.transform.forward * -recoilForce);
+			selfRigidbody.AddForce(cannon.transform.forward * -recoilForce);
 			//Sound
 			audioSource.Play();
 			//Cooldown
-			remainingCoolDown = canonCoolDownDuration;
+			remainingCoolDown = cannonCoolDownDuration;
 			//Serverside stuff
-			CmdFireCanon (); //Called from the client, but invoked on the server
+			CmdFireCannon (); //Called from the client, but invoked on the server
 		}
 	}
 
@@ -145,15 +165,15 @@ public class HeadController : NetworkBehaviour {
 	/// Fires a cannonball out of the cannon (server side).
 	/// </summary>
 	[Command]
-	public void CmdFireCanon() { 			
-		//Canonball
-		GameObject cannonBall = GameObject.Instantiate(canonBallPrefab, canonTip.transform.position, Quaternion.identity, null);
+	public void CmdFireCannon() { 			
+		//Cannonball
+		GameObject cannonBall = GameObject.Instantiate(cannonBallPrefab, cannonTip.transform.position, Quaternion.identity, null);
 		cannonBall.GetComponent<CannonBall> ().currentPlanet = gameManager.GetPlanet ();
-		cannonBall.GetComponent<Rigidbody>().AddForce(canon.transform.forward * canonBallForce, ForceMode.Impulse);
+		cannonBall.GetComponent<Rigidbody>().AddForce(cannon.transform.forward * cannonBallForce, ForceMode.Impulse);
 		NetworkServer.Spawn(cannonBall);
-		Destroy(cannonBall, canonBallDuration);
+		Destroy(cannonBall, cannonBallDuration);
 		//Particle Effect
-		GameObject smoke = GameObject.Instantiate(ShootingFXPrefab, canonTip.transform.position, canon.transform.rotation, canonTip.transform);
+		GameObject smoke = GameObject.Instantiate(ShootingFXPrefab, cannonTip.transform.position, cannon.transform.rotation, cannonTip.transform);
 		smoke.transform.localPosition = Vector3.zero;
 		NetworkServer.Spawn(smoke);
 		Destroy (smoke, smokeDuration);
@@ -176,20 +196,20 @@ public class HeadController : NetworkBehaviour {
 	/// Rotates the tank's cannon up or down.
 	/// </summary>
 	public void RotateUpDown(RaycastHit hit) {
-		Vector3 direction = (canonBase.transform.InverseTransformPoint (hit.point) - canonBase.transform.localPosition);
-		if (direction.y > 0.1f) {	//Raise the canon
-			if (canonBase.transform.localEulerAngles.x < 180.0f || Vector3.Angle(head.transform.forward, canonBase.transform.forward) < maxAngle) {
+		Vector3 direction = (cannonBase.transform.InverseTransformPoint (hit.point) - cannonBase.transform.localPosition);
+		if (direction.y > 0.1f) {	//Raise the cannon
+			if (cannonBase.transform.localEulerAngles.x < 180.0f || Vector3.Angle(head.transform.forward, cannonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
 				Quaternion lookRotation = Quaternion.LookRotation (direction);
-				canonBase.transform.localRotation = Quaternion.RotateTowards (canonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
+				cannonBase.transform.localRotation = Quaternion.RotateTowards (cannonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 			}
-		} else if (direction.y < -0.1f) {	//Lower the canon
-			if (canonBase.transform.localEulerAngles.x > 180.0f || Vector3.Angle(head.transform.forward, canonBase.transform.forward) < maxAngle) {
+		} else if (direction.y < -0.1f) {	//Lower the cannon
+			if (cannonBase.transform.localEulerAngles.x > 180.0f || Vector3.Angle(head.transform.forward, cannonBase.transform.forward) < maxAngle) {
 				direction.x = 0.0f;
 				direction.z = 0.0f;
 				Quaternion lookRotation = Quaternion.LookRotation (direction);
-				canonBase.transform.localRotation = Quaternion.RotateTowards (canonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
+				cannonBase.transform.localRotation = Quaternion.RotateTowards (cannonBase.transform.localRotation, lookRotation, rotationSpeed * Time.deltaTime);
 			}
 		}
 	}

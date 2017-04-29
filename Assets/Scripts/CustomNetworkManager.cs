@@ -31,7 +31,7 @@ public class CustomNetworkManager : NetworkManager {
 		base.OnServerReady (conn);
 		Debug.Log ("Server ready.");
 		if (NetworkServer.connections.Count <= 1) {
-			GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().RandomizePlanet ();
+			//GameObject.Find ("ScriptsBucket").GetComponent<GameManager> ().RandomizePlanet ();
 		}
 	}
 

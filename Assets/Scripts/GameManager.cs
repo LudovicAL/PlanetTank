@@ -7,37 +7,63 @@ public class GameManager : NetworkBehaviour {
 
 	[Tooltip("The spawn prefab instantiated all around a planet to mark the different player starting positions.")] public GameObject spawnPrefab;
 	private GameObject[] planetList;
+	private GameObject[] spawnList;
+	private GameObject[] tankList;
+	private List<Vector3> spawnOffsets;
+	private int nextAvailableSpawn;
 	[SyncVar]
 	private int currentPlanet;
 
-	void Awake() {
-		planetList = GameObject.FindGameObjectsWithTag ("Planet");
+	void Start () {
+		nextAvailableSpawn = 0;
+		tankList = GameObject.FindGameObjectsWithTag ("Player");
+		RandomizePlanet ();
+		InitializeSpawns ();
+		foreach (GameObject go in tankList) {
+			go.GetComponent<HeadController> ().InitializeGameManager ();
+		}
+		Camera.main.GetComponent<SmoothFollow> ().InitializeGameManager ();
 	}
+
 
 	/// <summary>
 	/// Selects a random planet for the next match and move the spawn position all around it.
 	/// </summary>
 	public void RandomizePlanet () {
+		planetList = GameObject.FindGameObjectsWithTag ("Planet");
 		if (isServer) {
 			currentPlanet = Random.Range (0, planetList.Length - 1);
-			GameObject[] spawns = GameObject.FindGameObjectsWithTag ("Spawn");
-			MoveSpawn (spawns [0], new Vector3 (10.0f, 0.0f, 0.0f));
-			MoveSpawn (spawns [1], new Vector3 (-10.0f, 0.0f, 0.0f));
-			MoveSpawn (spawns [2], new Vector3 (0.0f, 10.0f, 0.0f));
-			MoveSpawn (spawns [3], new Vector3 (0.0f, -10.0f, 0.0f));
-			MoveSpawn (spawns [4], new Vector3 (0.0f, 0.0f, 10.0f));
-			MoveSpawn (spawns [5], new Vector3 (0.0f, 0.0f, -10.0f));
-			MoveSpawn (spawns [6], new Vector3 (10.0f, 10.0f, 0.0f));
-			MoveSpawn (spawns [7], new Vector3 (-10.0f, -10.0f, 0.0f));
+		}
+	}
+
+	/// <summary>
+	/// Initializes the spawns
+	/// </summary>
+	private void InitializeSpawns() {
+		if (isServer) {
+			spawnList = GameObject.FindGameObjectsWithTag ("Spawn");
+			spawnOffsets = new List<Vector3> ();
+			spawnOffsets.Add (new Vector3 (10.0f, 0.0f, 0.0f));
+			spawnOffsets.Add (new Vector3 (-10.0f, 0.0f, 0.0f));
+			spawnOffsets.Add (new Vector3 (0.0f, 10.0f, 0.0f));
+			spawnOffsets.Add (new Vector3 (0.0f, -10.0f, 0.0f));
+			spawnOffsets.Add (new Vector3 (0.0f, 0.0f, 10.0f));
+			spawnOffsets.Add (new Vector3 (0.0f, 0.0f, -10.0f));
+			spawnOffsets.Add (new Vector3 (10.0f, 10.0f, 0.0f));
+			spawnOffsets.Add (new Vector3 (-10.0f, -10.0f, 0.0f));
+			spawnOffsets.Shuffle ();
+			for (int i = 0, maxA = spawnList.Length, maxB = spawnOffsets.Count; i < maxA && i < maxB; i++) {
+				MoveSpawn (i);
+			}
 		}
 	}
 
 	/// <summary>
 	/// Moves a spawn to a specified location.
 	/// </summary>
-	private void MoveSpawn(GameObject spawn, Vector3 modifier) {
-		spawn.transform.position = GetPlanet ().transform.position + modifier;
-		spawn.transform.rotation = Quaternion.LookRotation (spawn.transform.position - GetPlanet ().transform.position + new Vector3(0.0f, -90.0f, 0.0f));
+	private void MoveSpawn(int spawnNumber) {
+		spawnList[spawnNumber].transform.position = GetPlanet ().transform.position + spawnOffsets[spawnNumber];
+		spawnList[spawnNumber].transform.rotation = Quaternion.LookRotation (spawnList[spawnNumber].transform.position - GetPlanet ().transform.position + new Vector3(0.0f, -90.0f, 0.0f), spawnList[spawnNumber].transform.position - GetPlanet ().transform.position);
 	}
 
 	/// <summary>
@@ -45,5 +71,18 @@ public class GameManager : NetworkBehaviour {
 	/// </summary>
 	public GameObject GetPlanet() {
 		return planetList [currentPlanet];
+	}
+
+	/// <summary>
+	/// Returns the next available spawn position.
+	/// </summary>
+	[Command]
+	public void CmdMovePlayerToHisSpawn(GameObject player) {
+		GameObject spawn = spawnList[nextAvailableSpawn];
+		nextAvailableSpawn++;
+		if (nextAvailableSpawn >= spawnList.Length) {
+			nextAvailableSpawn = 0;
+		}
+		player.GetComponent<HeadController>().RpcMoveToSpawn (spawn.transform.position, spawn.transform.rotation);
 	}
 }
