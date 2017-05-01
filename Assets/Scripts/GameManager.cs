@@ -25,7 +25,6 @@ public class GameManager : NetworkBehaviour {
 		Camera.main.GetComponent<Activator> ().Activate ();
 	}
 
-
 	/// <summary>
 	/// Selects a random planet for the next match and move the spawn position all around it.
 	/// </summary>
@@ -63,7 +62,6 @@ public class GameManager : NetworkBehaviour {
 	/// </summary>
 	private void MoveSpawn(int spawnNumber) {
 		spawnList[spawnNumber].transform.position = GetPlanet ().transform.position + spawnOffsets[spawnNumber];
-		spawnList[spawnNumber].transform.rotation = Quaternion.LookRotation (spawnList[spawnNumber].transform.position - GetPlanet ().transform.position + new Vector3(0.0f, -90.0f, 0.0f), spawnList[spawnNumber].transform.position - GetPlanet ().transform.position);
 	}
 
 	/// <summary>
@@ -83,6 +81,6 @@ public class GameManager : NetworkBehaviour {
 		if (nextAvailableSpawn >= spawnList.Length) {
 			nextAvailableSpawn = 0;
 		}
-		player.GetComponent<HeadController>().RpcMoveToPosition (spawn.transform.position, spawn.transform.rotation);
+		player.GetComponent<HeadController>().RpcSetSpawn (spawn.transform.position);
 	}
 }

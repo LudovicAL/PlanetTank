@@ -9,15 +9,8 @@ public class CannonBall : NetworkBehaviour {
 	[HideInInspector] public GameObject currentPlanet;
 	private AudioSource audioSource;
 
-
-	// Use this for initialization
 	void Start () {
 		audioSource = this.GetComponent<AudioSource>();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
 	}
 
 	/// <summary>

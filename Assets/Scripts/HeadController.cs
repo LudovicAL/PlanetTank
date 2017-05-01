@@ -19,9 +19,9 @@ public class HeadController : NetworkBehaviour {
 	[Header("Particle Effects")]
 	[Tooltip("The lifespan of the smoke when the cannon is shot, in seconds.")] public float smokeDuration;
 	[Tooltip("The smoke prefab instantiated when the cannon is shot.")] public GameObject ShootingFXPrefab;
-	[Header("Tank health")]
+	[Header("Health system")]
 	[SyncVar] public int health;
-	[Header("Player")]
+	[Header("Player infos")]
 	[SyncVar] public string pName;
 	[SyncVar] public Color pColor;
 	private GameObject head;
@@ -30,13 +30,12 @@ public class HeadController : NetworkBehaviour {
 	private GameObject cannon;
 	private Rigidbody selfRigidbody;
 	private AudioSource audioSource;
-	private SmoothFollow cameraSmoothFollow;
 	private GameObject scriptsBucket;
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 	private ChatManager chatManager;
-	private IdMaker idMaker;
-	NetworkClient client;
+	private Vector3 spawnPosition;
+	private NetworkClient client;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
 	void Start () {
@@ -52,16 +51,18 @@ public class HeadController : NetworkBehaviour {
 		cannon = cannonBase.transform.FindChild("Cannon").gameObject;
 		cannonTip = cannon.transform.FindChild("CannonTip").gameObject;
 		selfRigidbody = this.GetComponent<Rigidbody>();
-		cameraSmoothFollow = Camera.main.GetComponent<SmoothFollow> ();
 		audioSource = cannon.GetComponent<AudioSource>();
 		scriptsBucket = GameObject.Find ("ScriptsBucket");
 		gameManager = scriptsBucket.GetComponent<GameManager>();
-		idMaker = this.GetComponent<IdMaker>();
 		chatManager = GameObject.Find("LobbyManager").transform.FindChild("ChatPanel").GetComponent<ChatManager>();
+		GameObject flag = this.transform.FindChild ("Flag").gameObject;
+		flag.GetComponent<TextMesh> ().text = pName;
+		flag.GetComponent<TextMesh> ().color = pColor;
 		if (isLocalPlayer) {
+			flag.SetActive(false);
 			chatManager.headController = this;
 			gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
-			cameraSmoothFollow.target = head.transform;
+			Camera.main.GetComponent<SmoothFollow> ().target = head.transform;
 			UpdatecannonColor();
 		}
 	}
@@ -78,17 +79,29 @@ public class HeadController : NetworkBehaviour {
 				Firecannon();
 			}
 			UpdateCannonCoolDown();
+			if (Input.GetButtonDown("Jump")) {
+				MoveToPosition (spawnPosition);
+			}
 		}
 	}
 
 	/// <summary>
-	/// Moves the tank to a given position (usually its spawn) (called by the server)
+	/// Sets the tank spawn position and rotation and calls the MoveToPosition function with these parameters
 	/// </summary>
 	[ClientRpc]
-	public void RpcMoveToPosition(Vector3 position, Quaternion rotation) {
+	public void RpcSetSpawn(Vector3 position) {
+		spawnPosition = position;
+		MoveToPosition (position);
+	}
+
+	/// <summary>
+	/// Moves the tank to a given position
+	/// </summary>
+	public void MoveToPosition(Vector3 position) {
 		if (isLocalPlayer) {
 			gameObject.transform.position = position;
-			gameObject.transform.rotation = rotation;
+			gameObject.transform.LookAt(gameManager.GetPlanet ().transform.position);
+			gameObject.transform.Rotate(new Vector3(-90.0f, 0.0f, 0.0f));
 		}
 	}
 
