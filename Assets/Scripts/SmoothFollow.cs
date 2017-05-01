@@ -7,26 +7,14 @@ public class SmoothFollow : MonoBehaviour {
 	[Tooltip("Distance to the target.")] public float distance;
 	[Tooltip("Height relative to the target.")] public float height;
 	[Tooltip("Angle of the camera.")] public float angle;
-	private bool gmWasInitialized;
 	private GameObject planet;
 	[Tooltip("Damping applied on the camera rotation speed.")] public float rotationDamping;
 	[Tooltip("Damping applied on the camera movement speed.")] public float positionDamping;
 
 
 	void Start() {
-		gmWasInitialized = false;
-		InitializeGameManager ();
-	}
-
-	public void InitializeGameManager() {
-		if (gmWasInitialized == false) {
-			GameObject scriptsBucket = GameObject.Find ("ScriptsBucket");
-			if (scriptsBucket == null) {
-				return;
-			}
-			planet = scriptsBucket.GetComponent<GameManager> ().GetPlanet();
-			gmWasInitialized = true;
-		}
+		GameObject scriptsBucket = GameObject.Find ("ScriptsBucket");
+		planet = scriptsBucket.GetComponent<GameManager> ().GetPlanet();
 	}
 
 	public void LateUpdate() {

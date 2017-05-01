@@ -20,9 +20,9 @@ public class GameManager : NetworkBehaviour {
 		RandomizePlanet ();
 		InitializeSpawns ();
 		foreach (GameObject go in tankList) {
-			go.GetComponent<HeadController> ().InitializeGameManager ();
+			go.GetComponent<Activator> ().Activate ();
 		}
-		Camera.main.GetComponent<SmoothFollow> ().InitializeGameManager ();
+		Camera.main.GetComponent<Activator> ().Activate ();
 	}
 
 

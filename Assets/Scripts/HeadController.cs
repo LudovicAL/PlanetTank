@@ -32,7 +32,6 @@ public class HeadController : NetworkBehaviour {
 	private AudioSource audioSource;
 	private SmoothFollow cameraSmoothFollow;
 	private GameObject scriptsBucket;
-	private bool gmWasInitialized;
 	private GameManager gameManager;
 	private float remainingCoolDown = 0.0f;
 	private ChatManager chatManager;
@@ -55,8 +54,9 @@ public class HeadController : NetworkBehaviour {
 		selfRigidbody = this.GetComponent<Rigidbody>();
 		cameraSmoothFollow = Camera.main.GetComponent<SmoothFollow> ();
 		audioSource = cannon.GetComponent<AudioSource>();
-		gmWasInitialized = false;
-		InitializeGameManager ();
+		scriptsBucket = GameObject.Find ("ScriptsBucket");
+		gameManager = scriptsBucket.GetComponent<GameManager>();
+		gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
 		idMaker = this.GetComponent<IdMaker>();
 		//chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
 		//chatManager.headController = this.GetComponent<HeadController> ();
@@ -64,18 +64,6 @@ public class HeadController : NetworkBehaviour {
 		if (isLocalPlayer) {
 			cameraSmoothFollow.target = head.transform;
 			UpdatecannonColor();
-		}
-	}
-
-	public void InitializeGameManager() {
-		if (gmWasInitialized == false) {
-			scriptsBucket = GameObject.Find ("ScriptsBucket");
-			if (scriptsBucket == null) {
-				return;
-			}
-			gameManager = scriptsBucket.GetComponent<GameManager>();
-			gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
-			gmWasInitialized = true;
 		}
 	}
 
