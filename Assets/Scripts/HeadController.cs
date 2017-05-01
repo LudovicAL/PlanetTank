@@ -56,21 +56,14 @@ public class HeadController : NetworkBehaviour {
 		audioSource = cannon.GetComponent<AudioSource>();
 		scriptsBucket = GameObject.Find ("ScriptsBucket");
 		gameManager = scriptsBucket.GetComponent<GameManager>();
-		gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
 		idMaker = this.GetComponent<IdMaker>();
-		//chatManager = GameObject.Find("Canvas").GetComponent<ChatManager> ();
-		//chatManager.headController = this.GetComponent<HeadController> ();
-		//chatManager.UpdateChatStatus (true);
+		chatManager = GameObject.Find("LobbyManager").transform.FindChild("ChatPanel").GetComponent<ChatManager>();
 		if (isLocalPlayer) {
+			chatManager.headController = this;
+			gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
 			cameraSmoothFollow.target = head.transform;
 			UpdatecannonColor();
 		}
-	}
-
-	[ClientRpc]
-	public void RpcMoveToSpawn(Vector3 position, Quaternion rotation) {
-		gameObject.transform.position = position;
-		gameObject.transform.rotation = rotation;
 	}
 
 	void Update () {
@@ -89,11 +82,13 @@ public class HeadController : NetworkBehaviour {
 	}
 
 	/// <summary>
-	/// Called when the GameObject is destroyed.
+	/// Moves the tank to a given position (usually its spawn) (called by the server)
 	/// </summary>
-	void OnDestroy() {
+	[ClientRpc]
+	public void RpcMoveToPosition(Vector3 position, Quaternion rotation) {
 		if (isLocalPlayer) {
-			chatManager.UpdateChatStatus (false);
+			gameObject.transform.position = position;
+			gameObject.transform.rotation = rotation;
 		}
 	}
 
@@ -206,11 +201,20 @@ public class HeadController : NetworkBehaviour {
 	/// Sends a chat message.
 	/// </summary>
 	public void SendChatMessage (string msg) {
-		StringMessage strMsg = new StringMessage(idMaker.playerUniqueId.ToString() + ": " + msg);
-		if (isServer) {
-			NetworkServer.SendToAll(CHAT_MSG, strMsg); // Send to all clients
-		} else if (client.isConnected ) {
-			client.Send(CHAT_MSG, strMsg); // Sending message from client to server
+		if (msg != null && msg.Length > 0) {
+			StringMessage strMsg = new StringMessage(
+				pColor.r.ToString() + "::"
+				+ pColor.g.ToString() + "::"
+				+ pColor.b.ToString() + "::"
+				+ pColor.a.ToString() + "::"
+				+ pName + "::"
+				+ msg
+			);
+			if (isServer) {
+				NetworkServer.SendToAll(CHAT_MSG, strMsg); // Send to all clients
+			} else if (client.isConnected ) {
+				client.Send(CHAT_MSG, strMsg); // Sending message from client to server
+			}
 		}
 	}
 
@@ -231,10 +235,7 @@ public class HeadController : NetworkBehaviour {
 	public void ClientReceiveChatMessage (NetworkMessage netMsg) {
 		if(client.isConnected) {
 			string str = netMsg.ReadMessage<StringMessage>().value;
-			int tempo;
-			int.TryParse (str.Substring (0, str.IndexOf (":")), out tempo);
-			bool ownMessage = (idMaker.playerUniqueId == tempo);
-			chatManager.ReceiveChatMessage (ownMessage, "Player " + str);
+			chatManager.ReceiveChatMessage (str);
 		}
 	}
 }

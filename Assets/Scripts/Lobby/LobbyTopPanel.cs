@@ -4,11 +4,12 @@ using System.Collections;
 
 namespace Prototype.NetworkLobby {
     public class LobbyTopPanel : MonoBehaviour {
+		public GameObject panelChat;
         public bool isInGame = false;
         protected bool isDisplayed = true;
         protected Image panelImage;
-
-        void Start() {
+        
+		void Start() {
             panelImage = GetComponent<Image>();
         }
 
@@ -23,6 +24,9 @@ namespace Prototype.NetworkLobby {
 
         public void ToggleVisibility(bool visible) {
             isDisplayed = visible;
+			if (panelChat != null) {
+				panelChat.SetActive (!visible);
+			}
             foreach (Transform t in transform) {
                 t.gameObject.SetActive(isDisplayed);
             }

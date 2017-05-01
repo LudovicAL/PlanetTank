@@ -83,6 +83,6 @@ public class GameManager : NetworkBehaviour {
 		if (nextAvailableSpawn >= spawnList.Length) {
 			nextAvailableSpawn = 0;
 		}
-		player.GetComponent<HeadController>().RpcMoveToSpawn (spawn.transform.position, spawn.transform.rotation);
+		player.GetComponent<HeadController>().RpcMoveToPosition (spawn.transform.position, spawn.transform.rotation);
 	}
 }
