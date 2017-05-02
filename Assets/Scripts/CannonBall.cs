@@ -22,9 +22,9 @@ public class CannonBall : NetworkBehaviour {
 		}
 		audioSource.Play();
 		if (other.gameObject.tag == "Player") {
-			Debug.Log ("Player hit!");
+			other.gameObject.GetComponent<HeadController> ().TakeDamage ();
 		}
-		Debug.Log (other.gameObject.tag.ToString());
+		Debug.Log ("Cannonball hit " + other.gameObject.tag.ToString());
 		Destroy (this);
 	}
 

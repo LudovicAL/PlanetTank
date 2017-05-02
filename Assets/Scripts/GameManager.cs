@@ -12,27 +12,30 @@ public class GameManager : NetworkBehaviour {
 	private List<Vector3> spawnOffsets;
 	private int nextAvailableSpawn;
 	[SyncVar]
-	private int currentPlanet;
+	private int currentPlanet = -1;
+
+	void Awake() {
+		planetList = GameObject.FindGameObjectsWithTag ("Planet");
+		if (!isClient) {
+			RandomizePlanet ();
+		}
+	}
+		
+	private void RandomizePlanet() {
+		if (currentPlanet == -1) {
+			currentPlanet = Random.Range (0, planetList.Length);
+		}
+	}
 
 	void Start () {
 		nextAvailableSpawn = 0;
 		tankList = GameObject.FindGameObjectsWithTag ("Player");
-		RandomizePlanet ();
+
 		InitializeSpawns ();
 		foreach (GameObject go in tankList) {
 			go.GetComponent<Activator> ().Activate ();
 		}
 		Camera.main.GetComponent<Activator> ().Activate ();
-	}
-
-	/// <summary>
-	/// Selects a random planet for the next match and move the spawn position all around it.
-	/// </summary>
-	public void RandomizePlanet () {
-		planetList = GameObject.FindGameObjectsWithTag ("Planet");
-		if (isServer) {
-			currentPlanet = Random.Range (0, planetList.Length - 1);
-		}
 	}
 
 	/// <summary>
@@ -74,8 +77,7 @@ public class GameManager : NetworkBehaviour {
 	/// <summary>
 	/// Returns the next available spawn position.
 	/// </summary>
-	[Command]
-	public void CmdMovePlayerToHisSpawn(GameObject player) {
+	public void MovePlayerToHisSpawn(GameObject player) {
 		GameObject spawn = spawnList[nextAvailableSpawn];
 		nextAvailableSpawn++;
 		if (nextAvailableSpawn >= spawnList.Length) {

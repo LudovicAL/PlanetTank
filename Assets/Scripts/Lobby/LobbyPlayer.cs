@@ -4,6 +4,7 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 namespace Prototype.NetworkLobby {
     //Player entry in the lobby. Handle selecting color/setting name & getting ready for the game

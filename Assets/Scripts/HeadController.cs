@@ -61,7 +61,7 @@ public class HeadController : NetworkBehaviour {
 		if (isLocalPlayer) {
 			flag.SetActive(false);
 			chatManager.headController = this;
-			gameManager.CmdMovePlayerToHisSpawn (this.gameObject);
+			CmdGoToSpawn ();
 			Camera.main.GetComponent<SmoothFollow> ().target = head.transform;
 			UpdatecannonColor();
 		}
@@ -83,6 +83,14 @@ public class HeadController : NetworkBehaviour {
 				MoveToPosition (spawnPosition);
 			}
 		}
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	[Command]
+	public void CmdGoToSpawn() {
+		gameManager.MovePlayerToHisSpawn (this.gameObject);
 	}
 
 	/// <summary>
@@ -128,16 +136,32 @@ public class HeadController : NetworkBehaviour {
 	}
 
 	/// <summary>
-	/// Has the tank receive damage from a cannonball hit.
+	/// Checks for localPlayer before calling the CmdTakeDamge function
 	/// </summary>
 	public void TakeDamage() {
-		if (!isServer) {
-			health -= 1;
-			if (health <= 0) {
-				health = 0;
-				Debug.Log ("Player died.");
-				Destroy (this);
-			}
+		if (isLocalPlayer) {
+			CmdTakeDamage ();
+		}
+	}
+
+	/// <summary>
+	/// Has the tank receive damage from a cannonball hit.
+	/// </summary>
+	[Command]
+	private void CmdTakeDamage() {
+		health--;
+		RpcAssessDamage ();
+	}
+
+	/// <summary>
+	/// Assess the current status of the tank after it received damage.
+	/// </summary>
+	[ClientRpc]
+	private void RpcAssessDamage() {
+		if (health > 0) {
+			Debug.Log (pName + " received damage.");
+		} else {
+			Debug.Log (pName + " died.");
 		}
 	}
 
