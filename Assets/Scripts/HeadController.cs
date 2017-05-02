@@ -20,7 +20,8 @@ public class HeadController : NetworkBehaviour {
 	[Tooltip("The lifespan of the smoke when the cannon is shot, in seconds.")] public float smokeDuration;
 	[Tooltip("The smoke prefab instantiated when the cannon is shot.")] public GameObject ShootingFXPrefab;
 	[Header("Health system")]
-	[SyncVar] public int health;
+	[Tooltip("Maximum hit points")] public int maxHealth;
+	[SyncVar] public int currentHealth;
 	[Header("Player infos")]
 	[SyncVar] public string pName;
 	[SyncVar] public Color pColor;
@@ -36,6 +37,7 @@ public class HeadController : NetworkBehaviour {
 	private ChatManager chatManager;
 	private Vector3 spawnPosition;
 	private NetworkClient client;
+	private HealthBarManager healthBarManager;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
 	void Start () {
@@ -59,6 +61,8 @@ public class HeadController : NetworkBehaviour {
 		flag.GetComponent<TextMesh> ().text = pName;
 		flag.GetComponent<TextMesh> ().color = pColor;
 		if (isLocalPlayer) {
+			healthBarManager = GameObject.Find ("HealthPanel").GetComponent<HealthBarManager> ();
+			healthBarManager.UpdateHealthBar (currentHealth, maxHealth);
 			flag.SetActive(false);
 			chatManager.headController = this;
 			CmdGoToSpawn ();
@@ -149,7 +153,7 @@ public class HeadController : NetworkBehaviour {
 	/// </summary>
 	[Command]
 	private void CmdTakeDamage() {
-		health--;
+		currentHealth--;
 		RpcAssessDamage ();
 	}
 
@@ -158,11 +162,33 @@ public class HeadController : NetworkBehaviour {
 	/// </summary>
 	[ClientRpc]
 	private void RpcAssessDamage() {
-		if (health > 0) {
-			Debug.Log (pName + " received damage.");
-		} else {
-			Debug.Log (pName + " died.");
+		if (isLocalPlayer) {
+			healthBarManager.UpdateHealthBar (currentHealth, maxHealth);
 		}
+		if (currentHealth <= 0) {
+			Die ();
+		}
+	}
+
+	private void Detach(GameObject go){
+		go.transform.parent = null;
+		go.AddComponent<Gravity> ();
+		go.AddComponent<Rigidbody> ();
+		go.GetComponent<Rigidbody> ().useGravity = false;
+		go.GetComponent<Rigidbody> ().mass = 300;
+	}
+
+	/// <summary>
+	/// Kills the tank.
+	/// </summary>
+	private void Die() {
+		Detach (cannon);
+		Detach (head);
+		Detach (this.transform.Find ("Meshes").Find ("Body").gameObject);
+		GetComponent<UnityStandardAssets.Vehicles.Car.CarController> ().enabled = false;
+		GetComponent<UnityStandardAssets.Vehicles.Car.CarUserControl> ().enabled = false;
+		GetComponent<UnityStandardAssets.Vehicles.Car.CarAudio> ().enabled = false;
+		GetComponent<HeadController> ().enabled = false;
 	}
 
 	/// <summary>

@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class Gravity : MonoBehaviour {
+public class NetworkGravity : NetworkBehaviour {
 
 	private float gravity = -100000.0f;
 	private Rigidbody rb;
@@ -14,6 +15,8 @@ public class Gravity : MonoBehaviour {
 	}
 
 	void FixedUpdate () {
-		rb.AddForce((this.transform.position - planet.transform.position).normalized * gravity * Time.fixedDeltaTime);
+		if (isLocalPlayer) {
+			rb.AddForce((this.transform.position - planet.transform.position).normalized * gravity * Time.fixedDeltaTime);
+		}
 	}
 }

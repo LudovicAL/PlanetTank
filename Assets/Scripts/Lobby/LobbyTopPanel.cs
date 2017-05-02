@@ -5,6 +5,7 @@ using System.Collections;
 namespace Prototype.NetworkLobby {
     public class LobbyTopPanel : MonoBehaviour {
 		public GameObject panelChat;
+		public GameObject panelHealth;
         public bool isInGame = false;
         protected bool isDisplayed = true;
         protected Image panelImage;
@@ -26,6 +27,9 @@ namespace Prototype.NetworkLobby {
             isDisplayed = visible;
 			if (panelChat != null) {
 				panelChat.SetActive (!visible);
+			}
+			if (panelHealth != null) {
+				panelHealth.SetActive (!visible);
 			}
             foreach (Transform t in transform) {
                 t.gameObject.SetActive(isDisplayed);
