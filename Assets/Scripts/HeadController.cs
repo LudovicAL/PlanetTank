@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Networking.NetworkSystem;
+using UnityEngine.UI;
 
 public class HeadController : NetworkBehaviour {
 
@@ -38,6 +39,8 @@ public class HeadController : NetworkBehaviour {
 	private Vector3 spawnPosition;
 	private NetworkClient client;
 	private HealthBarManager healthBarManager;
+	private GameObject flag;
+	private GameStatusManager gameStatusManager;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
 	void Start () {
@@ -57,9 +60,12 @@ public class HeadController : NetworkBehaviour {
 		scriptsBucket = GameObject.Find ("ScriptsBucket");
 		gameManager = scriptsBucket.GetComponent<GameManager>();
 		chatManager = GameObject.Find("LobbyManager").transform.FindChild("ChatPanel").GetComponent<ChatManager>();
-		GameObject flag = this.transform.FindChild ("Flag").gameObject;
+		flag = this.transform.FindChild ("Flag").gameObject;
 		flag.GetComponent<TextMesh> ().text = pName;
 		flag.GetComponent<TextMesh> ().color = pColor;
+		gameStatusManager = GameObject.Find ("GameStatusPanel").GetComponent<GameStatusManager>();
+		gameStatusManager.localPlayer = this.gameObject;
+		gameStatusManager.UpdateStatus ();
 		if (isLocalPlayer) {
 			healthBarManager = GameObject.Find ("HealthPanel").GetComponent<HealthBarManager> ();
 			healthBarManager.UpdateHealthBar (currentHealth, maxHealth);
@@ -80,17 +86,32 @@ public class HeadController : NetworkBehaviour {
 				RotateUpDown (hit);
 			}
 			if (Input.GetButtonDown("Fire1")) {
-				Firecannon();
+				if (!UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) {
+					Firecannon();
+				}
 			}
 			UpdateCannonCoolDown();
-			if (Input.GetButtonDown("Jump")) {
+			if (Input.GetButtonDown("Fire2")) {
 				MoveToPosition (spawnPosition);
 			}
 		}
 	}
 
+	/*
+	void OnDestroy () {
+		gameManager.tankList.Remove (this.gameObject);
+		gameStatusManager.UpdateStatus ();
+	}
+
+	public override void OnNetworkDestroy() {
+		base.OnNetworkDestroy ();
+		gameManager.tankList.Remove (this.gameObject);
+		gameStatusManager.UpdateStatus ();
+	}
+	*/
+
 	/// <summary>
-	/// 
+	/// Moves the player to his the spawn choosen for him by the server
 	/// </summary>
 	[Command]
 	public void CmdGoToSpawn() {
@@ -111,6 +132,7 @@ public class HeadController : NetworkBehaviour {
 	/// </summary>
 	public void MoveToPosition(Vector3 position) {
 		if (isLocalPlayer) {
+			selfRigidbody.velocity = new Vector3 (0.0f, 0.0f, 0.0f);
 			gameObject.transform.position = position;
 			gameObject.transform.LookAt(gameManager.GetPlanet ().transform.position);
 			gameObject.transform.Rotate(new Vector3(-90.0f, 0.0f, 0.0f));
@@ -170,6 +192,9 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
+	/// <summary>
+	/// Disassemble the tank into parts, showing that it died.
+	/// </summary>
 	private void Detach(GameObject go){
 		go.transform.parent = null;
 		go.AddComponent<Gravity> ();
@@ -189,6 +214,9 @@ public class HeadController : NetworkBehaviour {
 		GetComponent<UnityStandardAssets.Vehicles.Car.CarUserControl> ().enabled = false;
 		GetComponent<UnityStandardAssets.Vehicles.Car.CarAudio> ().enabled = false;
 		GetComponent<HeadController> ().enabled = false;
+		gameManager.tankList.Remove (this.gameObject);
+		gameStatusManager.UpdateStatus ();
+		flag.SetActive (false);
 	}
 
 	/// <summary>

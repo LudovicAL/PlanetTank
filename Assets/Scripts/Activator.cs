@@ -20,6 +20,12 @@ public class Activator : MonoBehaviour {
 			if (scriptsBucket == null) {
 				return;
 			}
+			GameManager gameManager = scriptsBucket.GetComponent<GameManager> ();
+			if (this.gameObject.tag == "Player") {
+				if (!gameManager.tankList.Contains(this.gameObject)) {
+					gameManager.tankList.Add (this.gameObject);
+				}
+			}
 			MonoBehaviour[] scripts = this.gameObject.GetComponents<MonoBehaviour>();
 			foreach (MonoBehaviour script in scripts) {
 				script.enabled = true;

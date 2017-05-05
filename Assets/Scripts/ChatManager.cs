@@ -29,13 +29,13 @@ public class ChatManager : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// Updates the chat Panel's header in order for it to display either 'show' or 'hide' according to the situation.
+	/// Updates the chat Panel's header in order for it to display either 'Chat' or 'hide' according to the situation.
 	/// </summary>
 	private void UpdateChatToggleButtonText() {
 		if (chatPanelAnimator.GetBool ("Show")) {
 			toggleButtonText.text = "Hide";
 		} else {
-			toggleButtonText.text = "Show";
+			toggleButtonText.text = "Chat";
 		}
 	}
 

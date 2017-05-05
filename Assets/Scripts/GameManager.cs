@@ -6,9 +6,10 @@ using UnityEngine.Networking;
 public class GameManager : NetworkBehaviour {
 
 	[Tooltip("The spawn prefab instantiated all around a planet to mark the different player starting positions.")] public GameObject spawnPrefab;
+	[HideInInspector]
+	public List<GameObject> tankList;
 	private GameObject[] planetList;
 	private GameObject[] spawnList;
-	private GameObject[] tankList;
 	private List<Vector3> spawnOffsets;
 	private int nextAvailableSpawn;
 	[SyncVar]
@@ -20,22 +21,26 @@ public class GameManager : NetworkBehaviour {
 			RandomizePlanet ();
 		}
 	}
-		
-	private void RandomizePlanet() {
-		if (currentPlanet == -1) {
-			currentPlanet = Random.Range (0, planetList.Length);
-		}
-	}
 
 	void Start () {
+		GameObject.Find ("GameStatusPanel").GetComponent<GameStatusManager> ().enabled = true;
 		nextAvailableSpawn = 0;
-		tankList = GameObject.FindGameObjectsWithTag ("Player");
+		tankList = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Player"));
 
 		InitializeSpawns ();
 		foreach (GameObject go in tankList) {
 			go.GetComponent<Activator> ().Activate ();
 		}
 		Camera.main.GetComponent<Activator> ().Activate ();
+	}
+
+	/// <summary>
+	/// Generates a random number used to identify the planet that will be used for the current game
+	/// </summary>
+	private void RandomizePlanet() {
+		if (currentPlanet == -1) {
+			currentPlanet = Random.Range (0, planetList.Length);
+		}
 	}
 
 	/// <summary>
