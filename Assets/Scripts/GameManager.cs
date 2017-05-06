@@ -23,7 +23,7 @@ public class GameManager : NetworkBehaviour {
 	}
 
 	void Start () {
-		GameObject.Find ("GameStatusPanel").GetComponent<GameStatusManager> ().enabled = true;
+		GameObject.Find ("GameStatusPanel").GetComponent<GameStatusWatcher> ().UpdateStatus ();
 		nextAvailableSpawn = 0;
 		tankList = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Player"));
 

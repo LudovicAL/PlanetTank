@@ -5,9 +5,10 @@ using UnityEngine.Networking;
 using UnityEngine.Networking.Types;
 using UnityEngine.Networking.Match;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Prototype.NetworkLobby {
-	
+
     public class LobbyManager : NetworkLobbyManager  {
         static short MsgKicked = MsgType.Highest + 1;
         static public LobbyManager s_Singleton;
@@ -227,7 +228,6 @@ namespace Prototype.NetworkLobby {
                     p.ToggleJoinButton(numPlayers >= minPlayers);
                 }
             }
-
         }
 
         public override bool OnLobbyServerSceneLoadedForPlayer(GameObject lobbyPlayer, GameObject gamePlayer) {

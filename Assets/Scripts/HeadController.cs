@@ -40,7 +40,7 @@ public class HeadController : NetworkBehaviour {
 	private NetworkClient client;
 	private HealthBarManager healthBarManager;
 	private GameObject flag;
-	private GameStatusManager gameStatusManager;
+	private GameStatusWatcher gameStatusWatcher;
 	const short CHAT_MSG = MsgType.Highest + 1;
 
 	void Start () {
@@ -63,10 +63,9 @@ public class HeadController : NetworkBehaviour {
 		flag = this.transform.FindChild ("Flag").gameObject;
 		flag.GetComponent<TextMesh> ().text = pName;
 		flag.GetComponent<TextMesh> ().color = pColor;
-		gameStatusManager = GameObject.Find ("GameStatusPanel").GetComponent<GameStatusManager>();
-		gameStatusManager.localPlayer = this.gameObject;
-		gameStatusManager.UpdateStatus ();
+		gameStatusWatcher = GameObject.Find ("GameStatusPanel").GetComponent<GameStatusWatcher>();
 		if (isLocalPlayer) {
+			gameStatusWatcher.localPlayer = this.gameObject;
 			healthBarManager = GameObject.Find ("HealthPanel").GetComponent<HealthBarManager> ();
 			healthBarManager.UpdateHealthBar (currentHealth, maxHealth);
 			flag.SetActive(false);
@@ -75,6 +74,7 @@ public class HeadController : NetworkBehaviour {
 			Camera.main.GetComponent<SmoothFollow> ().target = head.transform;
 			UpdatecannonColor();
 		}
+		gameStatusWatcher.UpdateStatus ();
 	}
 
 	void Update () {
@@ -97,18 +97,14 @@ public class HeadController : NetworkBehaviour {
 		}
 	}
 
-	/*
 	void OnDestroy () {
-		gameManager.tankList.Remove (this.gameObject);
-		gameStatusManager.UpdateStatus ();
+		RemovePlayerFromActivePlayerList ();
 	}
 
 	public override void OnNetworkDestroy() {
 		base.OnNetworkDestroy ();
-		gameManager.tankList.Remove (this.gameObject);
-		gameStatusManager.UpdateStatus ();
+		RemovePlayerFromActivePlayerList ();
 	}
-	*/
 
 	/// <summary>
 	/// Moves the player to his the spawn choosen for him by the server
@@ -176,18 +172,18 @@ public class HeadController : NetworkBehaviour {
 	[Command]
 	private void CmdTakeDamage() {
 		currentHealth--;
-		RpcAssessDamage ();
+		RpcAssessDamage (currentHealth);	//The currentHealth from the server is sent to the client, as the Syncvar value is otherwise not always updated in time on the client side.
 	}
 
 	/// <summary>
 	/// Assess the current status of the tank after it received damage.
 	/// </summary>
 	[ClientRpc]
-	private void RpcAssessDamage() {
+	private void RpcAssessDamage(int currentHealthFromServer) {
 		if (isLocalPlayer) {
-			healthBarManager.UpdateHealthBar (currentHealth, maxHealth);
+			healthBarManager.UpdateHealthBar (currentHealthFromServer, maxHealth);	//The currentHealth from the server is used by the client, as the Syncvar value is otherwise not always updated in time on the client side.
 		}
-		if (currentHealth <= 0) {
+		if (currentHealthFromServer <= 0) {	//The currentHealth from the server is used by the client, as the Syncvar value is otherwise not always updated in time on the client side.
 			Die ();
 		}
 	}
@@ -207,6 +203,7 @@ public class HeadController : NetworkBehaviour {
 	/// Kills the tank.
 	/// </summary>
 	private void Die() {
+		Debug.Log (pName + " died");
 		Detach (cannon);
 		Detach (head);
 		Detach (this.transform.Find ("Meshes").Find ("Body").gameObject);
@@ -214,9 +211,16 @@ public class HeadController : NetworkBehaviour {
 		GetComponent<UnityStandardAssets.Vehicles.Car.CarUserControl> ().enabled = false;
 		GetComponent<UnityStandardAssets.Vehicles.Car.CarAudio> ().enabled = false;
 		GetComponent<HeadController> ().enabled = false;
-		gameManager.tankList.Remove (this.gameObject);
-		gameStatusManager.UpdateStatus ();
+		RemovePlayerFromActivePlayerList ();
 		flag.SetActive (false);
+	}
+
+	/// <summary>
+	/// Kills the tank.
+	/// </summary>
+	public void RemovePlayerFromActivePlayerList() {
+		gameManager.tankList.Remove (this.gameObject);
+		gameStatusWatcher.UpdateStatus ();
 	}
 
 	/// <summary>

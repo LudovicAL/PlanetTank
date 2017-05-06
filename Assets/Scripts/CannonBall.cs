@@ -8,24 +8,29 @@ public class CannonBall : NetworkBehaviour {
 	[Tooltip("The explosion prefab instantiated when the cannonball collides with something.")] public GameObject explosionPrefab;
 	[HideInInspector] public GameObject currentPlanet;
 	private AudioSource audioSource;
+	private bool used;
 
 	void Start () {
 		audioSource = this.GetComponent<AudioSource>();
+		used = false;
 	}
 
 	/// <summary>
 	/// Triggered when the cannonball collide with another object.
 	/// </summary>
 	private void OnCollisionEnter(Collision other) {
-		if (hasAuthority) {
-			CmdSpawnExplosion (other.gameObject);
+		if (!used) {
+			used = true;
+			if (hasAuthority) {
+				CmdSpawnExplosion (other.gameObject);
+			}
+			audioSource.Play();
+			if (other.gameObject.tag == "Player") {
+				other.gameObject.GetComponent<HeadController> ().TakeDamage ();
+			}
+			Debug.Log ("Cannonball hit " + other.gameObject.tag.ToString());
+			Destroy (this);
 		}
-		audioSource.Play();
-		if (other.gameObject.tag == "Player") {
-			other.gameObject.GetComponent<HeadController> ().TakeDamage ();
-		}
-		Debug.Log ("Cannonball hit " + other.gameObject.tag.ToString());
-		Destroy (this);
 	}
 
 	/// <summary>
